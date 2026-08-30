@@ -213,6 +213,7 @@ table.grid td, table.grid th{
 }
 table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
+.table-overflow{overflow:visible; width:280px;}
 table.grid th{position:relative; padding:3px 14px 3px 6px; touch-action:none;}
 table.grid th.resize-hover, table.grid th.resizing{cursor:col-resize;}
 table.grid th .col-resizer{
@@ -364,14 +365,18 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .add-col-btn:hover{background:var(--hover);}
 
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
-.sheet{display:flex; flex-wrap:nowrap; gap:24px; align-items:flex-start;}
+.sheet{
+  display:grid;
+  grid-template-columns:280px 220px 220px minmax(380px, 1fr);
+  column-gap:24px;
+  align-items:start;
+}
 .block{position:relative; padding-top:6px; min-width:0;}
-.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 auto; min-width:280px;}
-.block[data-block="funded"]{flex:0 0 280px; max-width:280px; align-self:flex-start;}
-.block[data-block="trades"]{flex:0 0 auto; min-width:280px; align-self:flex-start;}
-.block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
-.block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
-.block[data-block="screens"]{flex:0 0 auto; min-width:380px;}
+.block-stack{display:flex; flex-direction:column; gap:16px; min-width:0;}
+.block-stack{grid-column:1; position:relative; z-index:2;}
+.block[data-block="maand"]{grid-column:2;}
+.block[data-block="totaal"]{grid-column:3;}
+.block[data-block="screens"]{grid-column:4; min-width:0;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -463,7 +468,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   <!-- Block: Trades table -->
   <div class="block" data-block="trades">
     <div class="trades-title">Trades 2</div>
-    <div class="table-scroll">
+    <div class="table-overflow">
       <table class="grid" id="tradesTable">
         <thead>
           <tr id="tradesHeadRow"></tr>
