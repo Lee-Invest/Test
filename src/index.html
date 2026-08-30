@@ -513,7 +513,72 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   .an-stats{grid-template-columns:repeat(2, 1fr);}
   .an-charts{flex-direction:column;}
 }
+
+.login-overlay{
+  position:fixed; inset:0; z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg);
+}
+.login-overlay[hidden]{display:none;}
+.login-box{
+  width:280px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  padding:22px 22px 20px;
+  font-family:Arial, Helvetica, sans-serif;
+}
+.login-box h1{font-size:16px; font-weight:bold; margin:0 0 4px; color:var(--text);}
+.login-box .login-sub{font-size:11px; color:var(--text-dim); margin-bottom:16px;}
+.login-field{margin-bottom:12px;}
+.login-field label{display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;}
+.login-field input{
+  width:100%;
+  box-sizing:border-box;
+  padding:7px 9px;
+  font-size:13px;
+  border:1px solid var(--border-strong);
+  background:var(--surface-2);
+  color:var(--text);
+  font-family:Arial, Helvetica, sans-serif;
+}
+.login-field input:focus{outline:1px solid var(--accent);}
+.login-error{
+  font-size:11px; color:var(--loss); margin-bottom:10px; min-height:14px;
+}
+.login-submit{
+  width:100%;
+  padding:8px;
+  font-size:13px;
+  font-weight:bold;
+  border:1px solid var(--text);
+  background:var(--text);
+  color:var(--bg);
+  cursor:pointer;
+}
+.login-submit:hover{opacity:0.85;}
+#appRoot[hidden]{display:none;}
 </style>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h1>Trade Journal</h1>
+    <div class="login-sub">Log in om je logboek te openen</div>
+    <form id="loginForm">
+      <div class="login-field">
+        <label for="loginUser">Gebruikersnaam</label>
+        <input type="text" id="loginUser" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label for="loginPass">Wachtwoord</label>
+        <input type="password" id="loginPass" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="login-submit">Inloggen</button>
+    </form>
+  </div>
+</div>
+
+<div id="appRoot" hidden>
 
 <div class="modal-overlay" id="confirmModal" hidden>
   <div class="modal-box">
@@ -650,7 +715,48 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 </div>
 </div>
 
+</div>
+
 <script>
+const LOGIN_USER = 'Test';
+const LOGIN_PASS = 'Test';
+const LOGIN_KEY = 'trade-journal-logged-in';
+
+function initLogin(){
+  const overlay = document.getElementById('loginOverlay');
+  const app = document.getElementById('appRoot');
+  const form = document.getElementById('loginForm');
+  const userInput = document.getElementById('loginUser');
+  const passInput = document.getElementById('loginPass');
+  const errorEl = document.getElementById('loginError');
+
+  let loggedIn = false;
+  try{ loggedIn = sessionStorage.getItem(LOGIN_KEY) === '1'; }catch(e){}
+
+  if(loggedIn){
+    overlay.hidden = true;
+    app.hidden = false;
+    return true;
+  }
+
+  form.onsubmit = (e)=>{
+    e.preventDefault();
+    if(userInput.value === LOGIN_USER && passInput.value === LOGIN_PASS){
+      try{ sessionStorage.setItem(LOGIN_KEY, '1'); }catch(e){}
+      overlay.hidden = true;
+      app.hidden = false;
+    } else {
+      errorEl.textContent = 'Onjuiste gebruikersnaam of wachtwoord.';
+      passInput.value = '';
+      passInput.focus();
+    }
+  };
+  userInput.focus();
+  return false;
+}
+
+const alreadyLoggedIn = initLogin();
+
 const STORAGE_KEY = 'trade-journal-sheet-v2';
 const CASHOUT_PCT = 0.80;
 
