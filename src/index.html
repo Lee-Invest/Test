@@ -400,11 +400,12 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .block-stack{display:flex; flex-direction:column; gap:16px; min-width:0;}
 .block-stack{grid-column:1; position:relative; z-index:2; isolation:isolate;}
 .block[data-block="trades"]{position:relative; z-index:2;}
-.right-stack{grid-column:2; display:flex; flex-direction:column; gap:14px; min-width:0;}
+.right-stack{grid-column:2; display:flex; flex-direction:column; gap:14px; min-width:0; position:relative; z-index:3;}
 .right-row{display:flex; gap:24px; align-items:start;}
 .block[data-block="maand"]{flex:0 0 220px;}
 .block[data-block="totaal"]{flex:0 0 220px;}
-.block[data-block="screens"]{flex:1 1 380px; min-width:0;}
+.screens-stack{flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:14px;}
+.block[data-block="screens"]{min-width:0;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -606,36 +607,39 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
         <div class="overzicht-box" id="totaalBox"></div>
       </div>
 
-      <!-- Block: screenshots -->
-      <div class="block" data-block="screens">
-        <div class="screens-title">Trades screenshots and explain</div>
-        <div class="table-scroll">
-          <div class="screens-grid" id="screensGrid"></div>
+      <!-- Screenshots + dashboard share exactly the same width -->
+      <div class="screens-stack">
+        <!-- Block: screenshots -->
+        <div class="block" data-block="screens">
+          <div class="screens-title">Trades screenshots and explain</div>
+          <div class="table-scroll">
+            <div class="screens-grid" id="screensGrid"></div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Analytics dashboard: right side, directly below Overzicht/Totaal/Screenshots -->
-    <div class="an-dashboard">
-      <div class="an-stats" id="anStats"></div>
-      <div class="an-charts">
-        <div class="an-card an-equity-card">
-          <div class="an-card-head">
-            <span>Equity Curve</span>
-            <span class="an-pill">Maand</span>
+        <!-- Analytics dashboard: same width as Screenshots, directly below it -->
+        <div class="an-dashboard">
+          <div class="an-stats" id="anStats"></div>
+          <div class="an-charts">
+            <div class="an-card an-equity-card">
+              <div class="an-card-head">
+                <span>Equity Curve</span>
+                <span class="an-pill">Maand</span>
+              </div>
+              <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="an-card an-donut-card">
+              <div class="an-card-head"><span>Winst / Verlies</span></div>
+              <div class="an-donut-wrap">
+                <svg id="anDonut" viewBox="0 0 120 120"></svg>
+                <div class="an-donut-legend" id="anDonutLegend"></div>
+              </div>
+            </div>
+            <div class="an-card an-bars-card">
+              <div class="an-card-head"><span>Winst per dag</span></div>
+              <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+            </div>
           </div>
-          <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="an-card an-donut-card">
-          <div class="an-card-head"><span>Winst / Verlies</span></div>
-          <div class="an-donut-wrap">
-            <svg id="anDonut" viewBox="0 0 120 120"></svg>
-            <div class="an-donut-legend" id="anDonutLegend"></div>
-          </div>
-        </div>
-        <div class="an-card an-bars-card">
-          <div class="an-card-head"><span>Winst per dag</span></div>
-          <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
         </div>
       </div>
     </div>
