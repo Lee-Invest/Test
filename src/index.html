@@ -213,27 +213,36 @@ table.grid td, table.grid th{
 }
 table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
-table.grid th{position:relative;}
+table.grid th{position:relative; padding:0; display:flex; align-items:stretch;}
 table.grid th .col-resizer{
-  position:absolute; top:0; right:-3px; width:6px; height:100%;
-  cursor:col-resize; z-index:2;
+  flex:0 0 10px;
+  align-self:stretch;
+  cursor:col-resize;
+  z-index:2;
+  border-left:1px solid transparent;
 }
 table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
 table.grid th .col-name{
-  display:block; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  flex:1;
+  min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  padding:3px 4px 3px 6px;
+  display:flex; align-items:center; justify-content:center;
 }
 table.grid th.extra-th{cursor:default;}
 table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
 table.grid th .col-del-btn{
-  position:absolute; top:1px; right:9px; font-size:9px; cursor:pointer; color:var(--text-dim);
-  opacity:0; transition:opacity .12s ease;
+  position:absolute; top:2px; right:12px; font-size:9px; cursor:pointer; color:var(--text-dim);
+  opacity:0; transition:opacity .12s ease; z-index:3;
 }
 table.grid th:hover .col-del-btn{opacity:1;}
 table.grid th .col-del-btn:hover{color:var(--loss);}
 .add-col-th{
-  width:28px; padding:0; text-align:center; cursor:pointer; color:var(--text-dim);
+  flex:0 0 28px; width:28px; padding:0; cursor:pointer; color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center;
 }
 .add-col-th:hover{background:var(--hover);}
+table.grid th.del-col-spacer{flex:0 0 16px; width:16px;}
 table.grid td input, table.grid td select{
   width:100%;
   border:none;
@@ -905,7 +914,7 @@ function renderTableHead(){
   headRow.appendChild(addTh);
 
   const delTh = document.createElement('th');
-  delTh.style.width = '16px';
+  delTh.className = 'del-col-spacer';
   headRow.appendChild(delTh);
 }
 
