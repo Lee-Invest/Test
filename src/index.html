@@ -215,8 +215,8 @@ table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 table.grid th{position:relative;}
 table.grid th .col-resizer{
-  position:absolute; top:0; right:-3px; width:6px; height:100%;
-  cursor:col-resize; z-index:2;
+  position:absolute; top:0; right:-5px; width:10px; height:100%;
+  cursor:col-resize; z-index:3; touch-action:none;
 }
 table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
 table.grid th .col-name{
@@ -360,13 +360,13 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .add-col-btn:hover{background:var(--hover);}
 
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
-.sheet{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;}
+.sheet{display:flex; flex-wrap:nowrap; gap:24px; align-items:flex-start;}
 .block{position:relative; padding-top:6px; min-width:0;}
 .block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
 .block-stack .block{max-width:100%;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
-.block[data-block="screens"]{flex:0 0 auto; min-width:380px; max-width:100%;}
+.block[data-block="screens"]{flex:0 0 auto; min-width:380px;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -778,12 +778,15 @@ function colWidth(key, fallback){
 }
 
 function startColResize(e, key, th){
+  if(e.button !== undefined && e.button !== 0) return;
   e.preventDefault();
   e.stopPropagation();
   const startX = e.clientX;
   const startWidth = th.getBoundingClientRect().width;
   const resizer = e.target;
   resizer.classList.add('resizing');
+  const prevUserSelect = document.body.style.userSelect;
+  document.body.style.userSelect = 'none';
 
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
@@ -793,6 +796,7 @@ function startColResize(e, key, th){
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
     resizer.classList.remove('resizing');
+    document.body.style.userSelect = prevUserSelect;
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
