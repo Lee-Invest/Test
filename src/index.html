@@ -204,23 +204,30 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .info-box{font-size:12px; line-height:1.5; color:var(--text);}
 .info-box b{font-weight:bold;}
 table{border-collapse:collapse; width:100%;}
+table.grid{table-layout:fixed;}
 table.grid td, table.grid th{
   border:1px solid var(--border-strong);
   padding:3px 6px;
   font-size:11.5px;
   color:var(--text);
 }
-table.grid th{background:var(--surface-2); font-weight:bold; text-align:center; position:sticky; top:0; z-index:1;}
-.table-resize{
-  resize:vertical;
-  overflow:auto;
-  min-height:90px;
-  max-height:900px;
-  height:260px;
-  border:1px solid var(--border-strong);
+table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
+.table-scroll{overflow-x:auto;}
+table.grid th{position:relative;}
+table.grid th .col-resizer{
+  position:absolute; top:0; right:-3px; width:6px; height:100%;
+  cursor:col-resize; z-index:2;
 }
-.table-resize table.grid td, .table-resize table.grid th{border-top:none; border-left:none;}
-.table-resize table.grid td:first-child, .table-resize table.grid th:first-child{border-left:none;}
+table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
+table.grid th .col-name{
+  display:block; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+table.grid th.extra-th{cursor:default;}
+table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
+.add-col-th{
+  width:28px; padding:0; text-align:center; cursor:pointer; color:var(--text-dim);
+}
+.add-col-th:hover{background:var(--hover);}
 table.grid td input, table.grid td select{
   width:100%;
   border:none;
@@ -408,18 +415,10 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     </div>
 
     <div class="trades-title">Trades 2</div>
-    <div class="table-resize" id="tradesTableWrap">
-      <table class="grid">
+    <div class="table-scroll">
+      <table class="grid" id="tradesTable">
         <thead>
-          <tr>
-            <th style="width:70px">Datum</th>
-            <th>Asset</th>
-            <th>Resultaat</th>
-            <th style="width:36px">RR</th>
-            <th style="width:36px">W/V</th>
-            <th>Notities</th>
-            <th style="width:16px"></th>
-          </tr>
+          <tr id="tradesHeadRow"></tr>
         </thead>
         <tbody id="tradeBody"></tbody>
       </table>
@@ -486,9 +485,18 @@ function newTab(name){
   };
 }
 
+const BASE_COLUMNS = [
+  {key:'datum', label:'Datum', width:70, placeholder:'dd-mm'},
+  {key:'asset', label:'Asset', width:110, placeholder:'asset'},
+  {key:'resultaat', label:'Resultaat', width:100, placeholder:'300 of -100'},
+  {key:'rr', label:'RR', width:44, placeholder:''},
+  {key:'wv', label:'W/V', width:44, placeholder:''},
+  {key:'notities', label:'Notities', width:160, placeholder:'notitie'}
+];
+
 function defaultState(){
   const t = newTab('Augustus');
-  return { tabs:[t], activeTabId: t.id };
+  return { tabs:[t], activeTabId: t.id, extraColumns:[], colWidths:{} };
 }
 
 function loadState(){
@@ -500,6 +508,8 @@ function loadState(){
         if(!parsed.activeTabId || !parsed.tabs.find(t=>t.id===parsed.activeTabId)){
           parsed.activeTabId = parsed.tabs[0].id;
         }
+        if(!Array.isArray(parsed.extraColumns)) parsed.extraColumns = [];
+        if(!parsed.colWidths || typeof parsed.colWidths !== 'object') parsed.colWidths = {};
         return parsed;
       }
     }
@@ -762,11 +772,114 @@ function renderInfo(){
   });
 }
 
+function colWidth(key, fallback){
+  return state.colWidths[key] || fallback;
+}
+
+function startColResize(e, key, th){
+  e.preventDefault();
+  const startX = e.clientX;
+  const startWidth = th.getBoundingClientRect().width;
+  const resizer = e.target;
+  resizer.classList.add('resizing');
+
+  function onMove(ev){
+    const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
+    th.style.width = newWidth + 'px';
+  }
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    resizer.classList.remove('resizing');
+    state.colWidths[key] = parseInt(th.style.width);
+    saveState();
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function renderTableHead(){
+  const headRow = document.getElementById('tradesHeadRow');
+  headRow.innerHTML = '';
+
+  BASE_COLUMNS.forEach(col=>{
+    const th = document.createElement('th');
+    th.style.width = colWidth(col.key, col.width) + 'px';
+    th.innerHTML = `<span class="col-name">${col.label}</span><span class="col-resizer"></span>`;
+    th.querySelector('.col-resizer').addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
+    headRow.appendChild(th);
+  });
+
+  state.extraColumns.forEach(col=>{
+    const th = document.createElement('th');
+    th.className = 'extra-th';
+    th.style.width = colWidth(col.id, 100) + 'px';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'col-name';
+    nameSpan.textContent = col.name;
+    nameSpan.title = 'dubbelklik om te hernoemen';
+    nameSpan.ondblclick = ()=>{
+      nameSpan.contentEditable = 'true';
+      nameSpan.focus();
+      document.execCommand('selectAll', false, null);
+    };
+    nameSpan.onblur = ()=>{
+      nameSpan.contentEditable = 'false';
+      col.name = nameSpan.textContent.trim() || 'Kolom';
+      saveState();
+    };
+    nameSpan.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); nameSpan.blur(); } };
+    th.appendChild(nameSpan);
+
+    const delBtn = document.createElement('span');
+    delBtn.textContent = '✕';
+    delBtn.title = 'kolom verwijderen';
+    delBtn.style.cssText = 'position:absolute; top:1px; right:8px; font-size:9px; cursor:pointer; color:var(--text-dim);';
+    delBtn.onclick = ()=>{
+      if(!confirm(`Kolom "${col.name}" verwijderen?`)) return;
+      state.extraColumns = state.extraColumns.filter(c=>c.id !== col.id);
+      state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.id]; }));
+      delete state.colWidths[col.id];
+      saveState();
+      renderRows();
+    };
+    th.appendChild(delBtn);
+
+    const resizer = document.createElement('span');
+    resizer.className = 'col-resizer';
+    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.id, th));
+    th.appendChild(resizer);
+
+    headRow.appendChild(th);
+  });
+
+  const addTh = document.createElement('th');
+  addTh.className = 'add-col-th';
+  addTh.textContent = '+';
+  addTh.title = 'nieuwe kolom toevoegen';
+  addTh.onclick = ()=>{
+    const name = prompt('Naam van de nieuwe kolom:', 'Kolom ' + (state.extraColumns.length + 1));
+    if(name === null) return;
+    const col = {id: uid(), name: name.trim() || 'Kolom'};
+    state.extraColumns.push(col);
+    state.tabs.forEach(t=> t.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; }));
+    saveState();
+    renderRows();
+  };
+  headRow.appendChild(addTh);
+
+  const delTh = document.createElement('th');
+  delTh.style.width = '16px';
+  headRow.appendChild(delTh);
+}
+
 function renderRows(){
+  renderTableHead();
   const tab = activeTab();
   const body = document.getElementById('tradeBody');
   body.innerHTML = '';
   tab.trades.forEach(trade=>{
+    if(!trade.extra) trade.extra = {};
     const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
     trade.wv = wv;
 
@@ -778,8 +891,29 @@ function renderRows(){
       <td><input type="text" inputmode="decimal" data-field="rr" value="${escapeAttr(trade.rr)}"></td>
       <td style="text-align:center; font-weight:bold; ${wv===1?'color:var(--win);':(wv===0?'color:var(--loss);':'')}">${wv===1?'1':(wv===0?'0':'')}</td>
       <td><input type="text" placeholder="notitie" data-field="notities" value="${escapeAttr(trade.notities)}"></td>
-      <td><button type="button" class="row-del" title="verwijder">✕</button></td>
     `;
+
+    state.extraColumns.forEach(col=>{
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = trade.extra[col.id] || '';
+      input.oninput = ()=>{
+        trade.extra[col.id] = input.value;
+        saveState();
+      };
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+
+    const delTd = document.createElement('td');
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'row-del';
+    delBtn.title = 'verwijder';
+    delBtn.textContent = '✕';
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
 
     tr.querySelectorAll('input[data-field]').forEach(inp=>{
       inp.oninput = ()=>{
@@ -795,7 +929,7 @@ function renderRows(){
       };
     });
 
-    tr.querySelector('.row-del').onclick = ()=>{
+    delBtn.onclick = ()=>{
       tab.trades = tab.trades.filter(t=>t.id !== trade.id);
       saveState();
       renderRows();
