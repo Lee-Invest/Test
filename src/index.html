@@ -348,6 +348,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 
 .sheet{display:flex; flex-wrap:wrap;}
 .block{position:relative; padding-top:6px; min-width:0;}
+.block[data-block="funded"]{flex:0 0 240px; max-width:240px;}
 .block[data-block="trades"]{flex:0 0 280px; max-width:280px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
@@ -396,9 +397,9 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 
 <div class="main-area">
 <div class="sheet" id="sheet">
-  <!-- Block: Funded account info + trades table -->
-  <div class="block" data-block="trades" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Trades</div>
+  <!-- Block: Funded account info -->
+  <div class="block" data-block="funded" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Funded account</div>
     <h2 class="title">Funded account</h2>
     <div class="info-box" id="infoBox">
       <b>Info:</b><br>
@@ -413,7 +414,11 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
       <span data-key="l9">80% payout.</span><br>
       <span data-key="l10">Target 10% Fase 1 funded - 10% &amp; 5%</span>
     </div>
+  </div>
 
+  <!-- Block: Trades table -->
+  <div class="block" data-block="trades" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Trades</div>
     <div class="trades-title">Trades 2</div>
     <div class="table-scroll">
       <table class="grid" id="tradesTable">
