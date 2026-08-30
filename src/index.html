@@ -354,7 +354,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .sheet > .block{flex:0 0 260px; max-width:260px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
-.block[data-block="screens"]{flex:0 0 640px; max-width:100%; min-width:0;}
+.block[data-block="screens"]{flex:0 0 auto; min-width:380px; max-width:100%;}
 .drag-handle{
   display:flex;
   align-items:center;
@@ -770,7 +770,19 @@ function initDragAndDrop(){
     });
   });
 
-  /* Fallback: dropping on empty space inside a container (not on a specific block) appends to that container */
+  function nearestInsertionPoint(container, clientX, clientY){
+    const isColumn = container.classList.contains('block-stack');
+    const siblings = Array.from(container.children).filter(c=>c !== draggedEl && (c.classList.contains('block') || c.classList.contains('block-stack')));
+    for(const sib of siblings){
+      const rect = sib.getBoundingClientRect();
+      const mid = isColumn ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
+      const pos = isColumn ? clientY : clientX;
+      if(pos < mid) return sib;
+    }
+    return null;
+  }
+
+  /* Fallback: dropping on empty space inside a container (gaps between blocks, or below/beside the last one) */
   document.querySelectorAll('.dnd-container, .block-stack').forEach(container=>{
     container.addEventListener('dragover', (e)=>{
       if(!draggedEl) return;
@@ -781,7 +793,12 @@ function initDragAndDrop(){
       if(!draggedEl) return;
       e.preventDefault();
       if(e.target === container){
-        container.appendChild(draggedEl);
+        const target = nearestInsertionPoint(container, e.clientX, e.clientY);
+        if(target){
+          container.insertBefore(draggedEl, target);
+        } else {
+          container.appendChild(draggedEl);
+        }
         document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
       }
     });
