@@ -270,13 +270,13 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .small-add:hover{background:var(--hover);}
 .row-del{border:none; background:transparent; cursor:pointer; color:var(--loss); font-size:12px;}
 
-.screens-title{font-weight:bold; font-size:13px; text-align:right; margin-bottom:6px; color:var(--text);}
+.screens-title{font-weight:bold; font-size:13px; text-align:left; margin-bottom:6px; color:var(--text);}
 .screens-grid{
   display:grid;
   grid-auto-flow:column;
   grid-auto-columns:180px;
   border:1px solid var(--border-strong);
-  overflow-x:auto;
+  width:max-content;
 }
 .screen-col{border-left:1px solid var(--border-strong);}
 .screen-col:first-child{border-left:none;}
@@ -354,7 +354,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .sheet > .block{flex:0 0 260px; max-width:260px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
-.block[data-block="screens"]{flex:1 1 100%; min-width:380px; max-width:100%;}
+.block[data-block="screens"]{flex:0 0 auto; min-width:380px; max-width:100%;}
 .drag-handle{
   display:flex;
   align-items:center;
@@ -453,7 +453,9 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   <div class="block" data-block="screens" draggable="true">
     <div class="drag-handle"><span class="grip">⠿⠿</span> Screenshots</div>
     <div class="screens-title">Trades screenshots and explain</div>
-    <div class="screens-grid" id="screensGrid"></div>
+    <div class="table-scroll">
+      <div class="screens-grid" id="screensGrid"></div>
+    </div>
   </div>
 </div>
 </div>
