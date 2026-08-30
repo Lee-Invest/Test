@@ -210,7 +210,17 @@ table.grid td, table.grid th{
   font-size:11.5px;
   color:var(--text);
 }
-table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
+table.grid th{background:var(--surface-2); font-weight:bold; text-align:center; position:sticky; top:0; z-index:1;}
+.table-resize{
+  resize:vertical;
+  overflow:auto;
+  min-height:90px;
+  max-height:900px;
+  height:260px;
+  border:1px solid var(--border-strong);
+}
+.table-resize table.grid td, .table-resize table.grid th{border-top:none; border-left:none;}
+.table-resize table.grid td:first-child, .table-resize table.grid th:first-child{border-left:none;}
 table.grid td input, table.grid td select{
   width:100%;
   border:none;
@@ -398,20 +408,22 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     </div>
 
     <div class="trades-title">Trades 2</div>
-    <table class="grid">
-      <thead>
-        <tr>
-          <th style="width:70px">Datum</th>
-          <th>Asset</th>
-          <th>Resultaat</th>
-          <th style="width:36px">RR</th>
-          <th style="width:36px">W/V</th>
-          <th>Notities</th>
-          <th style="width:16px"></th>
-        </tr>
-      </thead>
-      <tbody id="tradeBody"></tbody>
-    </table>
+    <div class="table-resize" id="tradesTableWrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width:70px">Datum</th>
+            <th>Asset</th>
+            <th>Resultaat</th>
+            <th style="width:36px">RR</th>
+            <th style="width:36px">W/V</th>
+            <th>Notities</th>
+            <th style="width:16px"></th>
+          </tr>
+        </thead>
+        <tbody id="tradeBody"></tbody>
+      </table>
+    </div>
     <button class="small-add" id="addRow" type="button">+ trade</button>
   </div>
 
@@ -774,9 +786,11 @@ function renderRows(){
         trade[inp.dataset.field] = inp.value;
         if(inp.dataset.field === 'resultaat'){
           trade.wv = computeWV(trade.resultaat);
+          const wvCell = tr.children[4];
+          wvCell.textContent = trade.wv===1?'1':(trade.wv===0?'0':'');
+          wvCell.style.color = trade.wv===1?'var(--win)':(trade.wv===0?'var(--loss)':'');
         }
         saveState();
-        renderRows();
         renderOverzichten();
       };
     });
