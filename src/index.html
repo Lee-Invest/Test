@@ -2,35 +2,66 @@
 <meta charset="UTF-8">
 <style>
 *{box-sizing:border-box;}
+html, body{height:100%;}
 body{
   background:#ffffff;
   color:#000000;
   font-family:Arial, Helvetica, sans-serif;
   font-size:12px;
-  padding:24px;
+  margin:0;
 }
 .layout{
   display:flex;
-  align-items:flex-start;
-  gap:20px;
+  align-items:stretch;
+  min-height:100vh;
 }
 
 /* Claude-style sidebar */
 .tabs-panel{
-  width:210px;
-  flex:0 0 210px;
+  width:260px;
+  flex:0 0 260px;
   background:#ffffff;
   border-right:1px solid #e5e5e5;
-  padding:8px 8px 8px 0;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
 }
+.sidebar-top{padding:14px 10px 6px;}
+.new-tab-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 10px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  cursor:pointer;
+  font-size:15px;
+  font-weight:600;
+  color:#141413;
+  text-align:left;
+  font-family:Arial, Helvetica, sans-serif;
+}
+.new-tab-btn:hover{background:#f1f1f1;}
+.new-tab-btn .plus{
+  width:22px; height:22px; border-radius:50%;
+  border:1px solid #d5d5d5;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:14px; line-height:1; color:#555;
+}
+
+.sidebar-divider{border-top:1px solid #e5e5e5; margin:8px 0;}
+
 .tabs-panel-head{
   font-weight:bold;
   font-size:11px;
   color:#8e8e8e;
-  padding:8px 10px 6px;
-  text-transform:uppercase;
-  letter-spacing:.04em;
+  padding:8px 14px 6px;
+  text-transform:none;
+  letter-spacing:.01em;
 }
+.tabs-scroll{flex:1 1 auto; overflow-y:auto; padding:0 8px;}
 .tabs-list{display:flex; flex-direction:column; gap:1px;}
 .tab-item{
   display:flex;
@@ -39,7 +70,7 @@ body{
   border-radius:8px;
   padding:8px 10px;
   cursor:pointer;
-  font-size:12.5px;
+  font-size:13px;
   color:#3d3d3d;
 }
 .tab-item:hover{background:#f1f1f1;}
@@ -60,27 +91,28 @@ body{
 }
 .tab-item:hover .tab-del{opacity:1;}
 .tab-item .tab-del:hover{color:#c0392b;}
-.add-tab-btn{
-  width:100%;
-  margin-top:4px;
-  padding:8px 10px;
-  font-size:12.5px;
-  border:none;
-  border-radius:8px;
-  background:transparent;
-  color:#3d3d3d;
-  cursor:pointer;
-  text-align:left;
+
+.sidebar-account{
+  border-top:1px solid #e5e5e5;
+  padding:10px 12px;
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:10px;
 }
-.add-tab-btn:hover{background:#f1f1f1;}
-.add-tab-btn .plus{
-  width:18px; height:18px; border-radius:50%;
-  border:1px solid #c7c7c7;
-  display:inline-flex; align-items:center; justify-content:center;
-  font-size:12px; line-height:1;
+.sidebar-account .avatar{
+  width:28px; height:28px; border-radius:50%;
+  background:#141413; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:bold; flex:0 0 auto;
+}
+.sidebar-account .who{display:flex; flex-direction:column; line-height:1.3; min-width:0;}
+.sidebar-account .who .name{font-size:12.5px; font-weight:600; color:#141413; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.sidebar-account .who .plan{font-size:11px; color:#8e8e8e;}
+
+.main-area{
+  flex:1;
+  min-width:0;
+  padding:24px;
 }
 
 .sheet{
@@ -215,15 +247,26 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid #1a73e8;
 .saved{font-size:10px; color:#888; text-align:right; margin-bottom:6px;}
 </style>
 
-<div class="saved" id="lastSaved"></div>
-
 <div class="layout">
   <div class="tabs-panel">
+    <div class="sidebar-top">
+      <button class="new-tab-btn" id="addTab" type="button"><span class="plus">+</span>Nieuwe maand</button>
+    </div>
+    <div class="sidebar-divider"></div>
     <div class="tabs-panel-head">Maanden</div>
-    <div class="tabs-list" id="tabsList"></div>
-    <button class="add-tab-btn" id="addTab" type="button"><span class="plus">+</span>Nieuw tabblad</button>
+    <div class="tabs-scroll">
+      <div class="tabs-list" id="tabsList"></div>
+    </div>
+    <div class="sidebar-account">
+      <div class="avatar">T</div>
+      <div class="who">
+        <div class="name">Trade Journal</div>
+        <div class="plan" id="lastSaved">nog niet opgeslagen</div>
+      </div>
+    </div>
   </div>
 
+<div class="main-area">
 <div class="sheet">
   <!-- Column 1: Funded account info + trades table -->
   <div>
@@ -287,6 +330,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid #1a73e8;
     <div class="screens-title">Trades screenshots and explain</div>
     <div class="screens-grid" id="screensGrid"></div>
   </div>
+</div>
 </div>
 </div>
 
