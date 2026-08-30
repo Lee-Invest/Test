@@ -723,9 +723,7 @@ function newTab(name){
     id: uid(),
     name: name || 'Nieuwe maand',
     info: defaultInfo(),
-    trades:[
-      {id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''}
-    ],
+    trades: Array.from({length: 24}, ()=> ({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''})),
     screens:[
       {id:uid(), num:1, text:'', img1:null, img2:null},
       {id:uid(), num:2, text:'', img1:null, img2:null},
