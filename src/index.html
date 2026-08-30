@@ -348,8 +348,10 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 
 .sheet{display:flex; flex-wrap:wrap;}
 .block{position:relative; padding-top:6px; min-width:0;}
-.block[data-block="funded"]{flex:0 0 240px; max-width:240px;}
-.block[data-block="trades"]{flex:0 0 280px; max-width:280px;}
+.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
+.block-stack:empty{display:none;}
+.block-stack .block{max-width:100%;}
+.sheet > .block{flex:0 0 260px; max-width:260px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="screens"]{flex:1 1 380px; min-width:380px;}
@@ -396,7 +398,8 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   </div>
 
 <div class="main-area">
-<div class="sheet" id="sheet">
+<div class="sheet dnd-container" id="sheet">
+  <div class="block-stack" id="stackFundedTrades">
   <!-- Block: Funded account info -->
   <div class="block" data-block="funded" draggable="true">
     <div class="drag-handle"><span class="grip">⠿⠿</span> Funded account</div>
@@ -429,6 +432,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
       </table>
     </div>
     <button class="small-add" id="addRow" type="button">+ trade</button>
+  </div>
   </div>
 
   <!-- Block: Overzicht Maand -->
@@ -674,31 +678,52 @@ document.querySelectorAll('#themeToggle button').forEach(btn=>{
 
 initTheme();
 
-/* Drag & drop reordering of the blocks */
-const LAYOUT_KEY = 'trade-journal-block-order';
+/* Drag & drop reordering of the blocks (container-aware: sheet row or a vertical stack) */
+const LAYOUT_KEY = 'trade-journal-block-order-v2';
 
-function applyBlockOrder(){
-  let order;
-  try{ order = JSON.parse(localStorage.getItem(LAYOUT_KEY)); }catch(e){ order = null; }
-  if(!Array.isArray(order)) return;
-  const sheet = document.getElementById('sheet');
-  order.forEach(id=>{
-    const el = sheet.querySelector(`.block[data-block="${id}"]`);
-    if(el) sheet.appendChild(el);
+function serializeContainer(el){
+  return Array.from(el.children).map(child=>{
+    if(child.classList.contains('block-stack')){
+      return {type:'stack', id:child.id, children: serializeContainer(child)};
+    }
+    if(child.classList.contains('block')){
+      return {type:'block', id:child.dataset.block};
+    }
+    return null;
+  }).filter(Boolean);
+}
+
+function applyStructure(structure, container){
+  structure.forEach(item=>{
+    if(item.type === 'block'){
+      const el = document.querySelector(`.block[data-block="${item.id}"]`);
+      if(el) container.appendChild(el);
+    } else if(item.type === 'stack'){
+      const stackEl = document.getElementById(item.id);
+      if(stackEl){
+        container.appendChild(stackEl);
+        applyStructure(item.children, stackEl);
+      }
+    }
   });
 }
 
+function applyBlockOrder(){
+  let structure;
+  try{ structure = JSON.parse(localStorage.getItem(LAYOUT_KEY)); }catch(e){ structure = null; }
+  if(!Array.isArray(structure)) return;
+  applyStructure(structure, document.getElementById('sheet'));
+}
+
 function saveBlockOrder(){
-  const sheet = document.getElementById('sheet');
-  const order = Array.from(sheet.querySelectorAll('.block')).map(el=>el.dataset.block);
-  try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(order)); }catch(e){}
+  const structure = serializeContainer(document.getElementById('sheet'));
+  try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(structure)); }catch(e){}
 }
 
 function initDragAndDrop(){
-  const sheet = document.getElementById('sheet');
   let draggedEl = null;
 
-  sheet.querySelectorAll('.block').forEach(block=>{
+  document.querySelectorAll('.block').forEach(block=>{
     block.addEventListener('dragstart', (e)=>{
       draggedEl = block;
       block.classList.add('dragging');
@@ -707,7 +732,7 @@ function initDragAndDrop(){
     });
     block.addEventListener('dragend', ()=>{
       block.classList.remove('dragging');
-      sheet.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+      document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
       draggedEl = null;
       saveBlockOrder();
     });
@@ -715,20 +740,28 @@ function initDragAndDrop(){
       if(!draggedEl || draggedEl === block) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
+      const container = block.parentElement;
+      const isColumn = container.classList.contains('block-stack');
       const rect = block.getBoundingClientRect();
-      const before = (e.clientX - rect.left) < rect.width / 2;
-      sheet.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+      const before = isColumn
+        ? (e.clientY - rect.top) < rect.height / 2
+        : (e.clientX - rect.left) < rect.width / 2;
+      document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
       block.classList.add(before ? 'drag-over-before' : 'drag-over-after');
     });
     block.addEventListener('drop', (e)=>{
       if(!draggedEl || draggedEl === block) return;
       e.preventDefault();
+      const container = block.parentElement;
+      const isColumn = container.classList.contains('block-stack');
       const rect = block.getBoundingClientRect();
-      const before = (e.clientX - rect.left) < rect.width / 2;
+      const before = isColumn
+        ? (e.clientY - rect.top) < rect.height / 2
+        : (e.clientX - rect.left) < rect.width / 2;
       if(before){
-        sheet.insertBefore(draggedEl, block);
+        container.insertBefore(draggedEl, block);
       } else {
-        sheet.insertBefore(draggedEl, block.nextSibling);
+        container.insertBefore(draggedEl, block.nextSibling);
       }
       block.classList.remove('drag-over-before','drag-over-after');
     });
