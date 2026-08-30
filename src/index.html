@@ -778,6 +778,7 @@ function colWidth(key, fallback){
 
 function startColResize(e, key, th){
   e.preventDefault();
+  e.stopPropagation();
   const startX = e.clientX;
   const startWidth = th.getBoundingClientRect().width;
   const resizer = e.target;
@@ -805,7 +806,7 @@ function renderTableHead(){
   BASE_COLUMNS.forEach(col=>{
     const th = document.createElement('th');
     th.style.width = colWidth(col.key, col.width) + 'px';
-    th.innerHTML = `<span class="col-name">${col.label}</span><span class="col-resizer"></span>`;
+    th.innerHTML = `<span class="col-name">${col.label}</span><span class="col-resizer" draggable="false"></span>`;
     th.querySelector('.col-resizer').addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
     headRow.appendChild(th);
   });
@@ -847,6 +848,7 @@ function renderTableHead(){
 
     const resizer = document.createElement('span');
     resizer.className = 'col-resizer';
+    resizer.setAttribute('draggable', 'false');
     resizer.addEventListener('mousedown', (e)=> startColResize(e, col.id, th));
     th.appendChild(resizer);
 
