@@ -447,6 +447,67 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .modal-actions button:hover{background:var(--hover);}
 .modal-actions button.danger{background:var(--loss); border-color:var(--loss); color:#fff;}
 .modal-actions button.danger:hover{filter:brightness(1.08);}
+
+/* ===== Analytics dashboard (own visual style, per request) ===== */
+.an-stats{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:16px;
+  margin-top:24px;
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+.an-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  padding:16px 16px 14px;
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+.an-stat-label{font-size:12px; color:var(--text-dim); font-weight:600; margin-bottom:8px;}
+.an-stat-row{display:flex; align-items:flex-end; justify-content:space-between; gap:8px;}
+.an-stat-value{font-size:22px; font-weight:700; color:var(--text); line-height:1.1;}
+.an-stat-sub{font-size:11px; color:var(--text-dim); margin-top:4px;}
+.an-stat-spark{flex:0 0 auto; width:56px; height:32px;}
+.an-ring-wrap{position:relative; width:44px; height:44px; flex:0 0 auto;}
+.an-ring-wrap svg{width:100%; height:100%;}
+.an-ring-label{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:700; color:var(--text);
+}
+
+.an-charts{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:16px;
+  margin-top:16px;
+  margin-bottom:24px;
+}
+.an-card-head{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:13px; font-weight:700; color:var(--text);
+  margin-bottom:12px;
+}
+.an-pill{
+  font-size:11px; font-weight:600; color:var(--text-dim);
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:20px; padding:3px 10px;
+}
+.an-equity-card svg, .an-bars-card svg{width:100%; height:150px; display:block;}
+.an-donut-wrap{display:flex; align-items:center; gap:14px;}
+.an-donut-wrap svg{width:96px; height:96px; flex:0 0 auto;}
+.an-donut-legend{display:flex; flex-direction:column; gap:8px; font-size:12px;}
+.an-donut-legend .an-leg-row{display:flex; align-items:center; gap:6px; color:var(--text);}
+.an-donut-legend .an-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
+.an-donut-legend .an-leg-sub{color:var(--text-dim); font-size:11px; margin-left:14px;}
+
+@media (max-width: 1300px){
+  .an-stats{grid-template-columns:repeat(3, 1fr);}
+  .an-charts{grid-template-columns:1fr; }
+}
+@media (max-width: 700px){
+  .an-stats{grid-template-columns:repeat(2, 1fr);}
+}
 </style>
 
 <div class="modal-overlay" id="confirmModal" hidden>
@@ -544,6 +605,29 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
     <div class="table-scroll">
       <div class="screens-grid" id="screensGrid"></div>
     </div>
+  </div>
+</div>
+
+<!-- Analytics dashboard -->
+<div class="an-stats" id="anStats"></div>
+<div class="an-charts">
+  <div class="an-card an-equity-card">
+    <div class="an-card-head">
+      <span>Equity Curve</span>
+      <span class="an-pill">Maand</span>
+    </div>
+    <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="an-card an-donut-card">
+    <div class="an-card-head"><span>Winst / Verlies</span></div>
+    <div class="an-donut-wrap">
+      <svg id="anDonut" viewBox="0 0 120 120"></svg>
+      <div class="an-donut-legend" id="anDonutLegend"></div>
+    </div>
+  </div>
+  <div class="an-card an-bars-card">
+    <div class="an-card-head"><span>Winst per dag</span></div>
+    <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
   </div>
 </div>
 
@@ -1119,6 +1203,202 @@ function renderOverzichten(){
       saveState();
     };
   }
+
+  renderAnalytics();
+}
+
+/* ===== Analytics dashboard ===== */
+
+function sparklinePath(values, w, h, pad){
+  if(values.length < 2) return '';
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const stepX = (w - pad*2) / (values.length - 1);
+  return values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - ((v-min)/range) * (h - pad*2);
+    return (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+}
+
+function statSparkSVG(values, color){
+  const w=56, h=32, pad=3;
+  const path = sparklinePath(values, w, h, pad);
+  if(!path) return `<svg viewBox="0 0 ${w} ${h}"></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function ringSVG(pct, color){
+  const r = 18, c = 2*Math.PI*r;
+  const dash = c * Math.max(0, Math.min(1, pct/100));
+  return `<svg viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border)" stroke-width="5"/>
+    <circle cx="22" cy="22" r="${r}" fill="none" stroke="${color}" stroke-width="5"
+      stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}" stroke-linecap="round"
+      transform="rotate(-90 22 22)"/>
+  </svg>`;
+}
+
+function statCard(label, value, sub, sparkValues, color){
+  const hasSpark = sparkValues && sparkValues.length > 1;
+  return `<div class="an-card">
+    <div class="an-stat-label">${label}</div>
+    <div class="an-stat-row">
+      <div>
+        <div class="an-stat-value">${value}</div>
+        <div class="an-stat-sub">${sub}</div>
+      </div>
+      ${hasSpark ? `<div class="an-stat-spark">${statSparkSVG(sparkValues, color)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderAnalytics(){
+  const statsEl = document.getElementById('anStats');
+  if(!statsEl) return;
+
+  const tab = activeTab();
+  const trades = tab.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const values = trades.map(t=> parseAmount(t.resultaat));
+  const wins = values.filter(v=> v>0);
+  const losses = values.filter(v=> v<0);
+  const aantal = trades.length;
+  const winrate = aantal>0 ? (wins.length/aantal*100) : 0;
+  const totalWinst = values.reduce((a,b)=>a+b,0);
+  const gemPerTrade = aantal>0 ? totalWinst/aantal : 0;
+  const avgRR = (()=>{
+    const rrs = trades.map(t=>parseAmount(t.rr)).filter(n=>!isNaN(n));
+    return rrs.length ? rrs.reduce((a,b)=>a+b,0)/rrs.length : 0;
+  })();
+  const grossWin = wins.reduce((a,b)=>a+b,0);
+  const grossLoss = Math.abs(losses.reduce((a,b)=>a+b,0));
+  const profitFactor = grossLoss>0 ? grossWin/grossLoss : (grossWin>0 ? Infinity : 0);
+
+  let running = 0, peak = 0, maxDD = 0;
+  const series = [0];
+  values.forEach(v=>{
+    running += v;
+    series.push(running);
+    peak = Math.max(peak, running);
+    maxDD = Math.max(maxDD, peak - running);
+  });
+
+  statsEl.innerHTML =
+    statCard('Winrate', winrate.toFixed(2)+'%', `${wins.length} van ${aantal}`, series, 'var(--win)') +
+    statCard('Gem. RR', avgRR.toFixed(2), fmtEUR(gemPerTrade)+' / trade', series, 'var(--accent)') +
+    statCard('Totaal Winst', fmtEUR(totalWinst), 'Deze maand', series, totalWinst>=0?'var(--win)':'var(--loss)') +
+    statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)') +
+    statCard('Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'), series, 'var(--accent-2, var(--accent))');
+
+  const ringHTML = `<div class="an-ring-wrap">${ringSVG(winrate, 'var(--win)')}<div class="an-ring-label">${winrate.toFixed(0)}%</div></div>`;
+  const firstCard = statsEl.children[0];
+  if(firstCard){
+    const row = firstCard.querySelector('.an-stat-row');
+    const sparkEl = row.querySelector('.an-stat-spark');
+    if(sparkEl) sparkEl.outerHTML = ringHTML;
+  }
+
+  renderAnalyticsEquity(series);
+  renderAnalyticsDonut(wins.length, losses.length);
+  renderAnalyticsBars(trades);
+}
+
+function renderAnalyticsEquity(series){
+  const svg = document.getElementById('anEquity');
+  if(!svg) return;
+  const W=400, H=170, padL=48, padR=10, padT=14, padB=22;
+  const min = Math.min(0, ...series), max = Math.max(0, ...series);
+  const range = (max-min) || 1;
+  const innerW = W-padL-padR, innerH = H-padT-padB;
+  const stepX = series.length>1 ? innerW/(series.length-1) : 0;
+  const x = i => padL + i*stepX;
+  const y = v => padT + innerH - ((v-min)/range)*innerH;
+  const zeroY = y(0);
+  const linePath = series.map((v,i)=> (i===0?'M':'L')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+  const areaPath = series.length>1 ? linePath + ` L${x(series.length-1).toFixed(1)},${(H-padB).toFixed(1)} L${x(0).toFixed(1)},${(H-padB).toFixed(1)} Z` : '';
+  const running = series[series.length-1] || 0;
+  const up = running >= 0;
+
+  svg.innerHTML = `
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--border-strong)"/>
+    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border-strong)"/>
+    <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--border)" stroke-dasharray="3,3"/>
+    <text x="${padL-6}" y="${padT+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(max)}</text>
+    <text x="${padL-6}" y="${(H-padB)+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(min)}</text>
+    ${areaPath ? `<path d="${areaPath}" fill="${up?'var(--win)':'var(--loss)'}" opacity="0.12"/>` : ''}
+    ${series.length>1 ? `<path d="${linePath}" fill="none" stroke="${up?'var(--win)':'var(--loss)'}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+  `;
+}
+
+function renderAnalyticsDonut(winCount, lossCount){
+  const svg = document.getElementById('anDonut');
+  const legend = document.getElementById('anDonutLegend');
+  if(!svg || !legend) return;
+
+  const total = winCount + lossCount;
+  const r = 46, cx = 60, cy = 60, sw = 16;
+  const c = 2*Math.PI*r;
+  const winPct = total>0 ? winCount/total : 0;
+  const lossPct = total>0 ? lossCount/total : 0;
+  const winDash = c*winPct;
+  const lossDash = c*lossPct;
+
+  svg.innerHTML = total>0 ? `
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--win)" stroke-width="${sw}"
+      stroke-dasharray="${winDash.toFixed(1)} ${c.toFixed(1)}" stroke-linecap="butt" transform="rotate(-90 ${cx} ${cy})"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--loss)" stroke-width="${sw}"
+      stroke-dasharray="${lossDash.toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="${(-winDash).toFixed(1)}" stroke-linecap="butt" transform="rotate(-90 ${cx} ${cy})"/>
+  ` : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${sw}"/>`;
+
+  legend.innerHTML = `
+    <div class="an-leg-row"><span class="an-dot" style="background:var(--win)"></span>Winst<span class="an-leg-sub">${winCount} (${total>0?(winPct*100).toFixed(1):'0'}%)</span></div>
+    <div class="an-leg-row"><span class="an-dot" style="background:var(--loss)"></span>Verlies<span class="an-leg-sub">${lossCount} (${total>0?(lossPct*100).toFixed(1):'0'}%)</span></div>
+  `;
+}
+
+function renderAnalyticsBars(trades){
+  const svg = document.getElementById('anBars');
+  if(!svg) return;
+
+  const byDay = {};
+  const order = [];
+  trades.forEach(t=>{
+    const key = t.datum || '?';
+    const v = parseAmount(t.resultaat);
+    if(isNaN(v)) return;
+    if(!(key in byDay)){ byDay[key] = 0; order.push(key); }
+    byDay[key] += v;
+  });
+
+  const W=400, H=170, padL=48, padR=10, padT=14, padB=22;
+  const innerW = W-padL-padR, innerH = H-padT-padB;
+  const vals = order.map(k=>byDay[k]);
+  const maxAbs = Math.max(1, ...vals.map(v=>Math.abs(v)));
+  const zeroY = padT + innerH/2;
+  const barW = order.length ? Math.min(28, innerW/order.length*0.6) : 0;
+  const step = order.length ? innerW/order.length : 0;
+
+  const bars = order.map((k,i)=>{
+    const v = byDay[k];
+    const h = (Math.abs(v)/maxAbs) * (innerH/2);
+    const x = padL + i*step + step/2 - barW/2;
+    const y = v>=0 ? zeroY - h : zeroY;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${v>=0?'var(--win)':'var(--loss)'}"/>`;
+  }).join('');
+
+  const labelEvery = Math.max(1, Math.ceil(order.length/6));
+  const labels = order.map((k,i)=> i%labelEvery===0 ? `<text x="${(padL+i*step+step/2).toFixed(1)}" y="${H-6}" font-size="8" fill="var(--text-dim)" text-anchor="middle">${k}</text>` : '').join('');
+
+  svg.innerHTML = `
+    <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--border-strong)"/>
+    <text x="${padL-6}" y="${padT+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(maxAbs)}</text>
+    <text x="${padL-6}" y="${(H-padB)+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">-${fmtEUR(maxAbs)}</text>
+    ${bars}
+    ${labels}
+  `;
 }
 
 function fileToDataUrl(file){
