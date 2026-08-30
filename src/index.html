@@ -837,19 +837,19 @@ function colWidth(key, fallback){
   return state.colWidths[key] || fallback;
 }
 
-const RESIZE_EDGE = 10;
+const RESIZE_EDGE = 12;
 
 function attachColumnResize(th, key){
-  th.addEventListener('mousemove', (e)=>{
+  th.addEventListener('pointermove', (e)=>{
     if(th.classList.contains('resizing')) return;
     const rect = th.getBoundingClientRect();
     const near = (rect.right - e.clientX) <= RESIZE_EDGE;
     th.classList.toggle('resize-hover', near);
   });
-  th.addEventListener('mouseleave', ()=>{
+  th.addEventListener('pointerleave', ()=>{
     if(!th.classList.contains('resizing')) th.classList.remove('resize-hover');
   });
-  th.addEventListener('mousedown', (e)=>{
+  th.addEventListener('pointerdown', (e)=>{
     const rect = th.getBoundingClientRect();
     if((rect.right - e.clientX) > RESIZE_EDGE) return;
     startColResize(e, key, th);
@@ -865,20 +865,25 @@ function startColResize(e, key, th){
   const resizerEl = th.querySelector('.col-resizer');
   if(resizerEl) resizerEl.classList.add('resizing');
 
+  try{ th.setPointerCapture(e.pointerId); }catch(err){}
+
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
     th.style.width = newWidth + 'px';
   }
-  function onUp(){
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
+  function onUp(ev){
+    th.removeEventListener('pointermove', onMove);
+    th.removeEventListener('pointerup', onUp);
+    th.removeEventListener('pointercancel', onUp);
+    try{ th.releasePointerCapture(e.pointerId); }catch(err){}
     th.classList.remove('resizing', 'resize-hover');
     if(resizerEl) resizerEl.classList.remove('resizing');
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
+  th.addEventListener('pointermove', onMove);
+  th.addEventListener('pointerup', onUp);
+  th.addEventListener('pointercancel', onUp);
 }
 
 function visibleBaseColumns(){
