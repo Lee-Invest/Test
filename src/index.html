@@ -213,28 +213,21 @@ table.grid td, table.grid th{
 }
 table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
-table.grid th{position:relative; padding:0;}
-table.grid th .th-inner{display:flex; align-items:stretch; height:100%;}
+table.grid th{position:relative; padding:3px 14px 3px 6px;}
 table.grid th .col-resizer{
-  flex:0 0 10px;
-  align-self:stretch;
-  cursor:col-resize;
-  z-index:2;
-  border-left:1px solid transparent;
+  position:absolute; top:0; right:0; width:10px; height:100%;
+  cursor:col-resize; z-index:5; touch-action:none;
 }
 table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
 table.grid th .col-name{
-  flex:1;
-  min-width:0;
+  display:block; width:100%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  padding:3px 4px 3px 6px;
-  display:flex; align-items:center; justify-content:center;
 }
 table.grid th.extra-th{cursor:default;}
 table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
 table.grid th .col-del-btn{
-  position:absolute; top:2px; right:16px; font-size:9px; cursor:pointer; color:var(--text-dim);
-  opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:3;
+  position:absolute; top:2px; right:14px; font-size:9px; cursor:pointer; color:var(--text-dim);
+  opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:4;
 }
 table.grid th:hover .col-del-btn{opacity:1; pointer-events:auto;}
 table.grid th .col-del-btn:hover{color:var(--loss);}
@@ -834,21 +827,10 @@ function renderTableHead(){
     const th = document.createElement('th');
     th.style.width = colWidth(col.key, col.width) + 'px';
 
-    const inner = document.createElement('div');
-    inner.className = 'th-inner';
-
     const nameSpan = document.createElement('span');
     nameSpan.className = 'col-name';
     nameSpan.textContent = col.label;
-    inner.appendChild(nameSpan);
-
-    const resizer = document.createElement('span');
-    resizer.className = 'col-resizer';
-    resizer.setAttribute('draggable', 'false');
-    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
-    inner.appendChild(resizer);
-
-    th.appendChild(inner);
+    th.appendChild(nameSpan);
 
     th.appendChild(buildColHeaderDelete(()=>{
       if(totalColumnCount() <= 1) return;
@@ -859,6 +841,12 @@ function renderTableHead(){
       });
     }));
 
+    const resizer = document.createElement('span');
+    resizer.className = 'col-resizer';
+    resizer.setAttribute('draggable', 'false');
+    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
+    th.appendChild(resizer);
+
     headRow.appendChild(th);
   });
 
@@ -866,9 +854,6 @@ function renderTableHead(){
     const th = document.createElement('th');
     th.className = 'extra-th';
     th.style.width = colWidth(col.id, 100) + 'px';
-
-    const inner = document.createElement('div');
-    inner.className = 'th-inner';
 
     const nameSpan = document.createElement('span');
     nameSpan.className = 'col-name';
@@ -885,15 +870,7 @@ function renderTableHead(){
       saveState();
     };
     nameSpan.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); nameSpan.blur(); } };
-    inner.appendChild(nameSpan);
-
-    const resizer = document.createElement('span');
-    resizer.className = 'col-resizer';
-    resizer.setAttribute('draggable', 'false');
-    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.id, th));
-    inner.appendChild(resizer);
-
-    th.appendChild(inner);
+    th.appendChild(nameSpan);
 
     th.appendChild(buildColHeaderDelete(()=>{
       if(totalColumnCount() <= 1) return;
@@ -905,6 +882,12 @@ function renderTableHead(){
         renderRows();
       });
     }));
+
+    const resizer = document.createElement('span');
+    resizer.className = 'col-resizer';
+    resizer.setAttribute('draggable', 'false');
+    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.id, th));
+    th.appendChild(resizer);
 
     headRow.appendChild(th);
   });
