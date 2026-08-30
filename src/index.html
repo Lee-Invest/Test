@@ -233,10 +233,10 @@ table.grid th .col-name{
 table.grid th.extra-th{cursor:default;}
 table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
 table.grid th .col-del-btn{
-  position:absolute; top:2px; right:12px; font-size:9px; cursor:pointer; color:var(--text-dim);
-  opacity:0; transition:opacity .12s ease; z-index:3;
+  position:absolute; top:2px; right:16px; font-size:9px; cursor:pointer; color:var(--text-dim);
+  opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:3;
 }
-table.grid th:hover .col-del-btn{opacity:1;}
+table.grid th:hover .col-del-btn{opacity:1; pointer-events:auto;}
 table.grid th .col-del-btn:hover{color:var(--loss);}
 .add-col-th{
   width:28px; padding:0; text-align:center; cursor:pointer; color:var(--text-dim);
