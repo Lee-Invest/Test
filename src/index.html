@@ -1,0 +1,378 @@
+<title>Trade Journal</title>
+<meta charset="UTF-8">
+<style>
+:root{
+  --bg:#f3f2ee;
+  --surface:#ffffff;
+  --surface-2:#faf9f6;
+  --border:#ded9cf;
+  --text:#231f1a;
+  --text-dim:#6b665c;
+  --accent:#1f6f5c;
+  --accent-soft:#e3efe9;
+  --win:#1f6f5c;
+  --win-bg:#e3efe9;
+  --loss:#a13f2c;
+  --loss-bg:#f6e6e1;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171512;
+    --surface:#201d19;
+    --surface-2:#25211c;
+    --border:#3a352d;
+    --text:#ede8df;
+    --text-dim:#a49d8e;
+    --accent:#5fbfa2;
+    --accent-soft:#22322c;
+    --win:#5fbfa2;
+    --win-bg:#1f3129;
+    --loss:#e28468;
+    --loss-bg:#3a251e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171512;
+  --surface:#201d19;
+  --surface-2:#25211c;
+  --border:#3a352d;
+  --text:#ede8df;
+  --text-dim:#a49d8e;
+  --accent:#5fbfa2;
+  --accent-soft:#22322c;
+  --win:#5fbfa2;
+  --win-bg:#1f3129;
+  --loss:#e28468;
+  --loss-bg:#3a251e;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  padding:32px 20px 80px;
+}
+h1,h2,h3{font-family:'Sora', system-ui, sans-serif; text-wrap:balance; margin:0;}
+.mono, input, .num{font-family:'IBM Plex Mono', 'Courier New', monospace; font-variant-numeric:tabular-nums;}
+
+.wrap{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:28px;}
+
+header.top{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--border); padding-bottom:18px;}
+header.top h1{font-size:1.7rem; letter-spacing:-0.01em;}
+header.top .sub{color:var(--text-dim); font-size:0.85rem;}
+
+.info-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 22px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px 24px;
+  font-size:0.85rem;
+}
+.info-card .item{display:flex; flex-direction:column; gap:2px;}
+.info-card .item label{color:var(--text-dim); font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em;}
+.info-card .item .val{font-family:'IBM Plex Mono',monospace;}
+.info-card .item input{border:none; background:transparent; color:var(--text); font-size:0.9rem; padding:2px 0; border-bottom:1px solid transparent; width:100%;}
+.info-card .item input:hover{border-bottom-color:var(--border);}
+.info-card .item input:focus{outline:none; border-bottom-color:var(--accent);}
+
+.stats-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;}
+.stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.stat label{font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);}
+.stat .value{font-family:'IBM Plex Mono',monospace; font-size:1.5rem; font-weight:600;}
+.stat.positive .value{color:var(--win);}
+.stat.negative .value{color:var(--loss);}
+
+section.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.panel-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+.panel-head h2{font-size:1.05rem;}
+.panel-head .hint{color:var(--text-dim); font-size:0.78rem;}
+
+button{
+  font-family:'IBM Plex Sans',sans-serif;
+  background:var(--accent);
+  color:var(--surface);
+  border:none;
+  border-radius:8px;
+  padding:8px 14px;
+  font-size:0.82rem;
+  cursor:pointer;
+  font-weight:600;
+}
+button.ghost{
+  background:transparent;
+  color:var(--text-dim);
+  border:1px solid var(--border);
+}
+button:hover{filter:brightness(1.08);}
+button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+
+.table-scroll{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; font-size:0.85rem; min-width:760px;}
+th{
+  text-align:left;
+  font-size:0.7rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text-dim);
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td{padding:4px 6px; border-bottom:1px solid var(--border); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td input, td select{
+  width:100%;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  padding:6px 8px;
+  font-size:0.85rem;
+}
+td input:focus, td select:focus{outline:none; border-color:var(--accent);}
+td.result-cell{font-weight:600;}
+td.result-cell.win{color:var(--win);}
+td.result-cell.loss{color:var(--loss);}
+.wv-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:100%; padding:5px 0; border-radius:6px; font-size:0.75rem; font-weight:600; letter-spacing:.03em;
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); cursor:pointer;
+}
+.wv-pill.win{background:var(--win-bg); color:var(--win); border-color:transparent;}
+.wv-pill.loss{background:var(--loss-bg); color:var(--loss); border-color:transparent;}
+.row-del{background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:1rem; padding:2px 6px;}
+.row-del:hover{color:var(--loss);}
+
+footer.note{color:var(--text-dim); font-size:0.75rem; text-align:center; padding-top:6px;}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Trade Journal</h1>
+      <div class="sub">Funded account tracker — vul trades in, alles hieronder rekent automatisch mee</div>
+    </div>
+    <div class="sub mono" id="lastSaved">nog niet opgeslagen</div>
+  </header>
+
+  <section class="info-card" id="infoCard">
+    <div class="item"><label>Trade kapitaal</label><input data-key="kapitaal" value="€ 10.000"></div>
+    <div class="item"><label>Max risico</label><input data-key="maxrisico" value="1%"></div>
+    <div class="item"><label>Max daily drawdown</label><input data-key="maxdd" value="5%"></div>
+    <div class="item"><label>Max drawdown</label><input data-key="dd" value="10%"></div>
+    <div class="item"><label>Max trades open</label><input data-key="maxopen" value="3"></div>
+    <div class="item"><label>Payout</label><input data-key="payout" value="80%"></div>
+    <div class="item"><label>Target</label><input data-key="target" value="10% Fase 1 funded — 10% &amp; 5%"></div>
+  </section>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Trades</h2>
+      <div class="hint">Vul datum, asset, resultaat (€) en RR in — W/V en de overzichten volgen automatisch</div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px">Datum</th>
+            <th style="width:140px">Asset</th>
+            <th style="width:120px">Resultaat (€)</th>
+            <th style="width:80px">RR</th>
+            <th style="width:90px">W/V</th>
+            <th>Notities</th>
+            <th style="width:32px"></th>
+          </tr>
+        </thead>
+        <tbody id="tradeBody"></tbody>
+      </table>
+    </div>
+    <div>
+      <button id="addRow" type="button">+ Trade toevoegen</button>
+    </div>
+  </section>
+
+  <footer class="note">Gegevens worden automatisch lokaal opgeslagen in je browser (localStorage).</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'trade-journal-v1';
+const CASHOUT_PCT = 0.80;
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {
+    info:{
+      kapitaal:'€ 10.000', maxrisico:'1%', maxdd:'5%', dd:'10%',
+      maxopen:'3', payout:'80%', target:'10% Fase 1 funded — 10% & 5%'
+    },
+    trades:[
+      {id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''}
+    ]
+  };
+}
+
+let state = loadState();
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const el = document.getElementById('lastSaved');
+    const t = new Date();
+    el.textContent = 'opgeslagen ' + t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }catch(e){}
+}
+
+function parseAmount(v){
+  if(v === '' || v === null || v === undefined) return NaN;
+  const cleaned = String(v).replace(/[€\s]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',', '.');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? NaN : n;
+}
+
+function fmtEUR(n){
+  if(isNaN(n)) return '€ 0,00';
+  return '€ ' + n.toLocaleString('nl-NL',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function computeWV(resultaat){
+  const n = parseAmount(resultaat);
+  if(isNaN(n)) return null;
+  return n > 0 ? 1 : 0;
+}
+
+function renderInfoCard(){
+  document.querySelectorAll('#infoCard input').forEach(inp=>{
+    const key = inp.dataset.key;
+    inp.value = state.info[key] ?? '';
+    inp.oninput = ()=>{ state.info[key] = inp.value; saveState(); };
+  });
+}
+
+function renderRows(){
+  const body = document.getElementById('tradeBody');
+  body.innerHTML = '';
+  state.trades.forEach(trade=>{
+    const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
+    trade.wv = wv;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="dd-mm" data-field="datum" value="${escapeAttr(trade.datum)}"></td>
+      <td><input type="text" placeholder="asset" data-field="asset" value="${escapeAttr(trade.asset)}"></td>
+      <td><input type="text" inputmode="decimal" placeholder="300 of -100" data-field="resultaat" value="${escapeAttr(trade.resultaat)}"></td>
+      <td><input type="text" inputmode="decimal" data-field="rr" value="${escapeAttr(trade.rr)}"></td>
+      <td><button type="button" class="wv-pill ${wv===1?'win':(wv===0?'loss':'')}" data-field="wv">${wv===1?'W':(wv===0?'V':'—')}</button></td>
+      <td><input type="text" placeholder="notitie..." data-field="notities" value="${escapeAttr(trade.notities)}"></td>
+      <td><button type="button" class="row-del" title="verwijder rij">✕</button></td>
+    `;
+
+    tr.querySelectorAll('input[data-field]').forEach(inp=>{
+      inp.oninput = ()=>{
+        trade[inp.dataset.field] = inp.value;
+        if(inp.dataset.field === 'resultaat'){
+          trade.wv = computeWV(trade.resultaat);
+        }
+        saveState();
+        renderRows();
+        renderStats();
+      };
+    });
+
+    tr.querySelector('.wv-pill').onclick = ()=>{
+      trade.wv = trade.wv === 1 ? 0 : (trade.wv === 0 ? null : 1);
+      saveState();
+      renderRows();
+      renderStats();
+    };
+
+    tr.querySelector('.row-del').onclick = ()=>{
+      state.trades = state.trades.filter(t=>t.id !== trade.id);
+      saveState();
+      renderRows();
+      renderStats();
+    };
+
+    const resultCell = tr.children[2];
+    const n = parseAmount(trade.resultaat);
+    if(!isNaN(n)){
+      resultCell.classList.add(n>0?'win':(n<0?'loss':''));
+    }
+
+    body.appendChild(tr);
+  });
+}
+
+function escapeAttr(v){
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function renderStats(){
+  const trades = state.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const totalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
+  const gewonnen = trades.filter(t=> t.wv === 1).length;
+  const verloren = trades.filter(t=> t.wv === 0).length;
+  const aantal = trades.length;
+  const winrate = aantal > 0 ? (gewonnen/aantal*100) : 0;
+  const gemiddeld = aantal > 0 ? totalWinst/aantal : 0;
+  const cashout = totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0;
+  const avgRR = (()=>{
+    const rrs = trades.map(t=>parseAmount(t.rr)).filter(n=>!isNaN(n));
+    return rrs.length ? rrs.reduce((a,b)=>a+b,0)/rrs.length : 0;
+  })();
+
+  const stats = [
+    {label:'Totaal winst', value: fmtEUR(totalWinst), cls: totalWinst>0?'positive':(totalWinst<0?'negative':'')},
+    {label:'Winrate', value: winrate.toFixed(1).replace('.',',') + '%', cls: winrate>=50?'positive':'negative'},
+    {label:'Aantal trades', value: aantal, cls:''},
+    {label:'Gewonnen / verloren', value: gewonnen + ' / ' + verloren, cls:''},
+    {label:'Gem. RR', value: avgRR.toFixed(2).replace('.',','), cls:''},
+    {label:'Gemiddeld per trade', value: fmtEUR(gemiddeld), cls: gemiddeld>0?'positive':(gemiddeld<0?'negative':'')},
+    {label:'Cashout (80%)', value: fmtEUR(cashout), cls: cashout>0?'positive':''},
+  ];
+
+  const row = document.getElementById('statsRow');
+  row.innerHTML = stats.map(s=>`
+    <div class="stat ${s.cls}">
+      <label>${s.label}</label>
+      <div class="value">${s.value}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('addRow').onclick = ()=>{
+  state.trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
+  saveState();
+  renderRows();
+  renderStats();
+};
+
+renderInfoCard();
+renderRows();
+renderStats();
+</script>
