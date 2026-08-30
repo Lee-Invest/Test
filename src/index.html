@@ -362,9 +362,8 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
 .sheet{display:flex; flex-wrap:nowrap; gap:24px; align-items:flex-start;}
 .block{position:relative; padding-top:6px; min-width:0;}
-.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 auto; min-width:280px;}
-.block[data-block="funded"]{flex:0 0 280px; max-width:280px; align-self:flex-start;}
-.block[data-block="trades"]{flex:0 0 auto; min-width:280px; align-self:flex-start;}
+.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
+.block-stack .block{max-width:100%;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="screens"]{flex:0 0 auto; min-width:380px;}
