@@ -195,42 +195,43 @@ body{
 h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .info-box{font-size:12px; line-height:1.5; color:var(--text);}
 .info-box b{font-weight:bold;}
-table{border-collapse:collapse; width:100%;}
-table.grid{table-layout:fixed; width:auto;}
-table.grid td, table.grid th{
+.trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
+
+/* Standalone Trades 2 widget — no <table>, no shared classes, fully self-contained */
+.tt{
+  position:relative;
+  display:inline-block;
   border:1px solid var(--border-strong);
+  background:var(--surface);
+}
+.tt-head{display:flex;}
+.tt-rows{display:flex; flex-direction:column;}
+.tt-row{display:flex;}
+.tt-row:not(:last-child){border-bottom:1px solid var(--border-strong);}
+.tt-cell{
+  box-sizing:border-box;
+  border-right:1px solid var(--border-strong);
   padding:3px 6px;
   font-size:11.5px;
   color:var(--text);
+  overflow:hidden;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
 }
-table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
-.table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
-.table-overflow{overflow:visible; width:280px;}
-table.grid th{position:relative; padding:3px 14px 3px 10px;}
-table.grid th .col-resizer{
-  position:absolute; top:0; right:0; width:10px; height:100%;
-  cursor:col-resize; z-index:10; touch-action:none;
-  background:var(--border-strong);
+.tt-head .tt-cell{
+  background:var(--surface-2);
+  font-weight:bold;
+  border-bottom:1px solid var(--border-strong);
+  position:relative;
+  padding-right:14px;
 }
-table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
-table.grid th .col-name{
+.tt-cell .tt-label{
   display:block; width:100%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-table.grid th.extra-th{cursor:default;}
-table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
-table.grid th .col-del-btn{
-  position:absolute; top:2px; right:14px; font-size:9px; cursor:pointer; color:var(--text-dim);
-  opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:4;
-}
-table.grid th:hover .col-del-btn{opacity:1; pointer-events:auto;}
-table.grid th .col-del-btn:hover{color:var(--loss);}
-.add-col-th{
-  width:28px; padding:0; text-align:center; cursor:pointer; color:var(--text-dim);
-}
-.add-col-th:hover{background:var(--hover);}
-table.grid th.del-col-spacer{width:16px;}
-table.grid td input, table.grid td select{
+.tt-cell .tt-label[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
+.tt-cell input{
   width:100%;
   border:none;
   background:transparent;
@@ -239,8 +240,33 @@ table.grid td input, table.grid td select{
   padding:1px;
   color:var(--text);
 }
-table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--accent); background:var(--accent-soft);}
-.trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
+.tt-cell input:focus{outline:1px solid var(--accent); background:var(--accent-soft);}
+.tt-wv{justify-content:center; font-weight:bold;}
+.tt-del-col{
+  position:absolute; top:2px; right:14px; font-size:9px; cursor:pointer; color:var(--text-dim);
+  opacity:0; pointer-events:none; transition:opacity .12s ease;
+}
+.tt-head .tt-cell:hover .tt-del-col{opacity:1; pointer-events:auto;}
+.tt-del-col:hover{color:var(--loss);}
+.tt-resizer{
+  position:absolute; top:0; right:0; width:10px; height:100%;
+  cursor:col-resize; background:var(--border-strong); touch-action:none;
+}
+.tt-resizer:hover, .tt-resizer.resizing{background:var(--accent);}
+.tt-add-col{
+  flex:0 0 28px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border-strong);
+  cursor:pointer;
+  color:var(--text-dim);
+}
+.tt-add-col:hover{background:var(--hover);}
+.tt-row-del{
+  flex:0 0 24px;
+  display:flex; align-items:center; justify-content:center;
+  border:none; background:transparent; cursor:pointer; color:var(--loss); font-size:12px;
+}
 
 .overzicht-box{display:flex; flex-direction:column; gap:6px;}
 .overzicht-row{display:flex; align-items:center; gap:8px; justify-content:space-between;}
@@ -481,16 +507,12 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     </div>
   </div>
 
-  <!-- Block: Trades table -->
+  <!-- Block: Trades table (fully standalone widget) -->
   <div class="block" data-block="trades">
     <div class="trades-title">Trades 2</div>
-    <div class="table-overflow">
-      <table class="grid" id="tradesTable">
-        <thead>
-          <tr id="tradesHeadRow"></tr>
-        </thead>
-        <tbody id="tradeBody"></tbody>
-      </table>
+    <div class="tt" id="tt">
+      <div class="tt-head" id="ttHead"></div>
+      <div class="tt-rows" id="ttRows"></div>
     </div>
     <button class="small-add" id="addRow" type="button">+ trade</button>
   </div>
@@ -832,184 +854,153 @@ function renderInfo(){
   });
 }
 
+/* ===== Standalone Trades 2 widget: independent from everything else on the page ===== */
+
 function colWidth(key, fallback){
   return state.colWidths[key] || fallback;
-}
-
-function attachColumnResize(th, key){
-  const resizerEl = th.querySelector('.col-resizer');
-  if(!resizerEl) return;
-  let started = false;
-  resizerEl.addEventListener('pointerdown', (e)=>{ started = true; startColResize(e, key, th, resizerEl); });
-  resizerEl.addEventListener('mousedown', (e)=>{
-    if(started){ started = false; return; }
-    startColResize(e, key, th, resizerEl);
-  });
-}
-
-function startColResize(e, key, th, resizerEl){
-  e.preventDefault();
-  e.stopPropagation();
-  const startX = e.clientX;
-  const startWidth = th.getBoundingClientRect().width;
-  th.classList.add('resizing');
-  resizerEl.classList.add('resizing');
-
-  function onMove(ev){
-    const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
-    th.style.width = newWidth + 'px';
-  }
-  function onUp(ev){
-    document.removeEventListener('pointermove', onMove);
-    document.removeEventListener('pointerup', onUp);
-    document.removeEventListener('pointercancel', onUp);
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-    th.classList.remove('resizing');
-    resizerEl.classList.remove('resizing');
-    state.colWidths[key] = parseInt(th.style.width);
-    saveState();
-  }
-  document.addEventListener('pointermove', onMove);
-  document.addEventListener('pointerup', onUp);
-  document.addEventListener('pointercancel', onUp);
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
-  resizerEl.addEventListener('pointercancel', onUp);
 }
 
 function visibleBaseColumns(){
   return BASE_COLUMNS.filter(c=> !state.hiddenBaseColumns.includes(c.key));
 }
 
+function ttColumns(){
+  return visibleBaseColumns().map(c=>({kind:'base', key:c.key, label:c.label, width:colWidth(c.key, c.width), placeholder:c.placeholder}))
+    .concat(state.extraColumns.map(c=>({kind:'extra', key:c.id, label:c.name, width:colWidth(c.id, 100), colObj:c})));
+}
+
 function totalColumnCount(){
-  return visibleBaseColumns().length + state.extraColumns.length;
+  return ttColumns().length;
 }
 
-function buildColHeaderDelete(onDelete){
-  const delBtn = document.createElement('span');
-  delBtn.textContent = '✕';
-  delBtn.title = 'kolom verwijderen';
-  delBtn.className = 'col-del-btn';
-  delBtn.onclick = onDelete;
-  return delBtn;
+function startColResize(startEvent, key, cellEl){
+  startEvent.preventDefault();
+  const startX = startEvent.clientX;
+  const startWidth = cellEl.getBoundingClientRect().width;
+  cellEl.classList.add('resizing');
+
+  function onMove(ev){
+    const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
+    state.colWidths[key] = newWidth;
+    document.querySelectorAll(`.tt-col-${cssSafe(key)}`).forEach(el=>{ el.style.width = newWidth + 'px'; });
+  }
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    cellEl.classList.remove('resizing');
+    saveState();
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
 }
 
-function renderTableHead(){
-  const headRow = document.getElementById('tradesHeadRow');
-  headRow.innerHTML = '';
+function cssSafe(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, '_'); }
 
-  visibleBaseColumns().forEach(col=>{
-    const th = document.createElement('th');
-    th.style.width = colWidth(col.key, col.width) + 'px';
+function buildTTHeaderCell(col){
+  const cell = document.createElement('div');
+  cell.className = 'tt-cell tt-col-' + cssSafe(col.key);
+  cell.style.width = col.width + 'px';
 
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'col-name';
-    nameSpan.textContent = col.label;
-    th.appendChild(nameSpan);
+  const label = document.createElement('span');
+  label.className = 'tt-label';
+  label.textContent = col.label;
+  cell.appendChild(label);
 
-    th.appendChild(buildColHeaderDelete(()=>{
-      if(totalColumnCount() <= 1) return;
-      showConfirm(`Kolom "${col.label}" verwijderen?`, ()=>{
-        state.hiddenBaseColumns.push(col.key);
-        saveState();
-        renderRows();
-      });
-    }));
-
-    const resizer = document.createElement('span');
-    resizer.className = 'col-resizer';
-    th.appendChild(resizer);
-    attachColumnResize(th, col.key);
-
-    headRow.appendChild(th);
-  });
-
-  state.extraColumns.forEach(col=>{
-    const th = document.createElement('th');
-    th.className = 'extra-th';
-    th.style.width = colWidth(col.id, 100) + 'px';
-
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'col-name';
-    nameSpan.textContent = col.name;
-    nameSpan.title = 'dubbelklik om te hernoemen';
-    nameSpan.ondblclick = ()=>{
-      nameSpan.contentEditable = 'true';
-      nameSpan.focus();
+  if(col.kind === 'extra'){
+    label.title = 'dubbelklik om te hernoemen';
+    label.ondblclick = ()=>{
+      label.contentEditable = 'true';
+      label.focus();
       document.execCommand('selectAll', false, null);
     };
-    nameSpan.onblur = ()=>{
-      nameSpan.contentEditable = 'false';
-      col.name = nameSpan.textContent.trim() || 'Kolom';
+    label.onblur = ()=>{
+      label.contentEditable = 'false';
+      col.colObj.name = label.textContent.trim() || 'Kolom';
       saveState();
     };
-    nameSpan.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); nameSpan.blur(); } };
-    th.appendChild(nameSpan);
+    label.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); label.blur(); } };
+  }
 
-    th.appendChild(buildColHeaderDelete(()=>{
-      if(totalColumnCount() <= 1) return;
-      showConfirm(`Kolom "${col.name}" verwijderen?`, ()=>{
-        state.extraColumns = state.extraColumns.filter(c=>c.id !== col.id);
-        state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.id]; }));
-        delete state.colWidths[col.id];
-        saveState();
-        renderRows();
-      });
-    }));
+  const delBtn = document.createElement('span');
+  delBtn.className = 'tt-del-col';
+  delBtn.textContent = '✕';
+  delBtn.title = 'kolom verwijderen';
+  delBtn.onclick = ()=>{
+    if(totalColumnCount() <= 1) return;
+    showConfirm(`Kolom "${col.label}" verwijderen?`, ()=>{
+      if(col.kind === 'base'){
+        state.hiddenBaseColumns.push(col.key);
+      } else {
+        state.extraColumns = state.extraColumns.filter(c=>c.id !== col.key);
+        state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.key]; }));
+        delete state.colWidths[col.key];
+      }
+      saveState();
+      renderTradesWidget();
+    });
+  };
+  cell.appendChild(delBtn);
 
-    const resizer = document.createElement('span');
-    resizer.className = 'col-resizer';
-    th.appendChild(resizer);
-    attachColumnResize(th, col.id);
+  const resizer = document.createElement('span');
+  resizer.className = 'tt-resizer';
+  resizer.addEventListener('mousedown', (e)=> startColResize(e, col.key, cell));
+  resizer.addEventListener('pointerdown', (e)=> startColResize(e, col.key, cell));
+  cell.appendChild(resizer);
 
-    headRow.appendChild(th);
-  });
+  return cell;
+}
 
-  const addTh = document.createElement('th');
-  addTh.className = 'add-col-th';
-  addTh.textContent = '+';
-  addTh.title = 'nieuwe kolom toevoegen';
-  addTh.onclick = ()=>{
+function renderTTHead(){
+  const head = document.getElementById('ttHead');
+  head.innerHTML = '';
+  ttColumns().forEach(col=> head.appendChild(buildTTHeaderCell(col)));
+
+  const addCell = document.createElement('div');
+  addCell.className = 'tt-add-col';
+  addCell.textContent = '+';
+  addCell.title = 'nieuwe kolom toevoegen';
+  addCell.onclick = ()=>{
     showPrompt('Naam van de nieuwe kolom:', 'Kolom ' + (state.extraColumns.length + 1), (name)=>{
       const col = {id: uid(), name: (name || '').trim() || 'Kolom'};
       state.extraColumns.push(col);
       state.tabs.forEach(t=> t.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; }));
       saveState();
-      renderRows();
+      renderTradesWidget();
     });
   };
-  headRow.appendChild(addTh);
-
-  const delTh = document.createElement('th');
-  delTh.className = 'del-col-spacer';
-  headRow.appendChild(delTh);
+  head.appendChild(addCell);
 }
 
-function renderRows(){
-  renderTableHead();
+function renderTTRows(){
   const tab = activeTab();
-  const body = document.getElementById('tradeBody');
-  body.innerHTML = '';
-  const cols = visibleBaseColumns();
+  const rowsEl = document.getElementById('ttRows');
+  rowsEl.innerHTML = '';
+  const cols = ttColumns();
 
   tab.trades.forEach(trade=>{
     if(!trade.extra) trade.extra = {};
     const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
     trade.wv = wv;
 
-    const tr = document.createElement('tr');
+    const rowEl = document.createElement('div');
+    rowEl.className = 'tt-row';
     let wvCell = null;
 
     cols.forEach(col=>{
-      const td = document.createElement('td');
-      if(col.key === 'wv'){
-        td.style.textAlign = 'center';
-        td.style.fontWeight = 'bold';
-        td.textContent = wv===1?'1':(wv===0?'0':'');
-        td.style.color = wv===1?'var(--win)':(wv===0?'var(--loss)':'');
-        wvCell = td;
-      } else {
+      const cell = document.createElement('div');
+      cell.className = 'tt-cell tt-col-' + cssSafe(col.key);
+      cell.style.width = col.width + 'px';
+
+      if(col.kind === 'base' && col.key === 'wv'){
+        cell.classList.add('tt-wv');
+        cell.textContent = wv===1?'1':(wv===0?'0':'');
+        cell.style.color = wv===1?'var(--win)':(wv===0?'var(--loss)':'');
+        wvCell = cell;
+      } else if(col.kind === 'base'){
         const input = document.createElement('input');
         input.type = 'text';
         if(col.key === 'resultaat' || col.key === 'rr') input.inputMode = 'decimal';
@@ -1027,42 +1018,44 @@ function renderRows(){
           saveState();
           renderOverzichten();
         };
-        td.appendChild(input);
+        cell.appendChild(input);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = trade.extra[col.key] || '';
+        input.oninput = ()=>{
+          trade.extra[col.key] = input.value;
+          saveState();
+        };
+        cell.appendChild(input);
       }
-      tr.appendChild(td);
+      rowEl.appendChild(cell);
     });
 
-    state.extraColumns.forEach(col=>{
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = trade.extra[col.id] || '';
-      input.oninput = ()=>{
-        trade.extra[col.id] = input.value;
-        saveState();
-      };
-      td.appendChild(input);
-      tr.appendChild(td);
-    });
-
-    const delTd = document.createElement('td');
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
-    delBtn.className = 'row-del';
+    delBtn.className = 'tt-row-del';
     delBtn.title = 'verwijder';
     delBtn.textContent = '✕';
-    delTd.appendChild(delBtn);
-    tr.appendChild(delTd);
-
     delBtn.onclick = ()=>{
       tab.trades = tab.trades.filter(t=>t.id !== trade.id);
       saveState();
-      renderRows();
+      renderTradesWidget();
       renderOverzichten();
     };
+    rowEl.appendChild(delBtn);
 
-    body.appendChild(tr);
+    rowsEl.appendChild(rowEl);
   });
+}
+
+function renderTradesWidget(){
+  renderTTHead();
+  renderTTRows();
+}
+
+function renderRows(){
+  renderTradesWidget();
 }
 
 function overzichtRow(label, valueHtml, suffix){
