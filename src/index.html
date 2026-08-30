@@ -197,6 +197,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .info-box{font-size:12px; line-height:1.5; color:var(--text);}
 .info-box b{font-weight:bold;}
 .trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
+.table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 
 /* Standalone Trades 2 widget — no <table>, no shared classes, fully self-contained */
 .tt{
@@ -446,27 +447,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .modal-actions button:hover{background:var(--hover);}
 .modal-actions button.danger{background:var(--loss); border-color:var(--loss); color:#fff;}
 .modal-actions button.danger:hover{filter:brightness(1.08);}
-
-.equity-row{position:static;}
-.equity-block{
-  position:absolute;
-  right:24px;
-  bottom:24px;
-  width:380px;
-  max-width:calc(100% - 48px);
-  box-sizing:border-box;
-  border:1px solid var(--border-strong);
-  padding:12px 14px 14px;
-  background:var(--surface);
-  box-shadow:0 8px 24px rgba(0,0,0,0.15);
-  z-index:50;
-}
-.equity-block svg{width:100%; height:150px; display:block;}
-.equity-legend{
-  display:flex; justify-content:space-between;
-  font-size:11px; color:var(--text-dim); margin-top:6px;
-}
-.equity-legend b{color:var(--text);}
 </style>
 
 <div class="modal-overlay" id="confirmModal" hidden>
@@ -567,13 +547,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   </div>
 </div>
 
-<div class="equity-row">
-  <div class="block equity-block" data-block="equity">
-    <h2 class="title">Equity curve deze maand</h2>
-    <svg id="equityChart" viewBox="0 0 380 170" preserveAspectRatio="none"></svg>
-    <div class="equity-legend" id="equityLegend"></div>
-  </div>
-</div>
 </div>
 </div>
 </div>
@@ -1146,58 +1119,6 @@ function renderOverzichten(){
       saveState();
     };
   }
-
-  renderEquityChart();
-}
-
-function renderEquityChart(){
-  const svg = document.getElementById('equityChart');
-  const legend = document.getElementById('equityLegend');
-  if(!svg || !legend) return;
-
-  const tab = activeTab();
-  const values = tab.trades
-    .map(t=> parseAmount(t.resultaat))
-    .filter(n=> !isNaN(n));
-
-  let running = 0;
-  const series = [0];
-  values.forEach(v=>{ running += v; series.push(running); });
-
-  const W = 380, H = 170, padL = 44, padR = 12, padT = 14, padB = 22;
-  const min = Math.min(0, ...series);
-  const max = Math.max(0, ...series);
-  const range = (max - min) || 1;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-  const stepX = series.length > 1 ? innerW / (series.length - 1) : 0;
-
-  const x = i => padL + i * stepX;
-  const y = v => padT + innerH - ((v - min) / range) * innerH;
-  const zeroY = y(0);
-
-  const linePath = series.map((v,i)=> (i===0?'M':'L') + x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
-  const areaPath = series.length > 1
-    ? linePath + ` L${x(series.length-1).toFixed(1)},${zeroY.toFixed(1)} L${x(0).toFixed(1)},${zeroY.toFixed(1)} Z`
-    : '';
-  const dots = series.map((v,i)=> `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`).join('');
-  const finalUp = running >= 0;
-
-  svg.innerHTML = `
-    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--border-strong)"/>
-    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border-strong)"/>
-    <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--border)" stroke-dasharray="3,3"/>
-    <text x="${padL-6}" y="${padT+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(max)}</text>
-    <text x="${padL-6}" y="${(H-padB)+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(min)}</text>
-    ${areaPath ? `<path d="${areaPath}" fill="${finalUp?'var(--win)':'var(--loss)'}" opacity="0.12"/>` : ''}
-    ${series.length>1 ? `<path d="${linePath}" fill="none" stroke="${finalUp?'var(--win)':'var(--loss)'}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-    ${dots}
-  `;
-
-  legend.innerHTML = `
-    <span>Start: <b>${fmtEUR(0)}</b></span>
-    <span>Eind: <b style="color:${finalUp?'var(--win)':'var(--loss)'}">${fmtEUR(running)}</b></span>
-  `;
 }
 
 function fileToDataUrl(file){
