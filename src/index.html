@@ -839,7 +839,12 @@ function colWidth(key, fallback){
 function attachColumnResize(th, key){
   const resizerEl = th.querySelector('.col-resizer');
   if(!resizerEl) return;
-  resizerEl.addEventListener('pointerdown', (e)=> startColResize(e, key, th, resizerEl));
+  let started = false;
+  resizerEl.addEventListener('pointerdown', (e)=>{ started = true; startColResize(e, key, th, resizerEl); });
+  resizerEl.addEventListener('mousedown', (e)=>{
+    if(started){ started = false; return; }
+    startColResize(e, key, th, resizerEl);
+  });
 }
 
 function startColResize(e, key, th, resizerEl){
@@ -850,24 +855,26 @@ function startColResize(e, key, th, resizerEl){
   th.classList.add('resizing');
   resizerEl.classList.add('resizing');
 
-  try{ resizerEl.setPointerCapture(e.pointerId); }catch(err){}
-
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
     th.style.width = newWidth + 'px';
   }
   function onUp(ev){
-    resizerEl.removeEventListener('pointermove', onMove);
-    resizerEl.removeEventListener('pointerup', onUp);
-    resizerEl.removeEventListener('pointercancel', onUp);
-    try{ resizerEl.releasePointerCapture(e.pointerId); }catch(err){}
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
     th.classList.remove('resizing');
     resizerEl.classList.remove('resizing');
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
-  resizerEl.addEventListener('pointermove', onMove);
-  resizerEl.addEventListener('pointerup', onUp);
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
   resizerEl.addEventListener('pointercancel', onUp);
 }
 
