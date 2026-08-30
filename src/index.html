@@ -400,7 +400,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .block-stack{display:flex; flex-direction:column; gap:16px; min-width:0;}
 .block-stack{grid-column:1; position:relative; z-index:2; isolation:isolate;}
 .block[data-block="trades"]{position:relative; z-index:2;}
-.right-stack{grid-column:2; display:flex; flex-direction:column; gap:24px; min-width:0;}
+.right-stack{grid-column:2; display:flex; flex-direction:column; gap:14px; min-width:0;}
 .right-row{display:flex; gap:24px; align-items:start;}
 .block[data-block="maand"]{flex:0 0 220px;}
 .block[data-block="totaal"]{flex:0 0 220px;}
@@ -457,34 +457,33 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-stats{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
-  gap:16px;
+  gap:10px;
   font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 .an-card{
   background:var(--surface);
   border:1px solid var(--border);
-  border-radius:14px;
+  border-radius:10px;
   box-shadow:0 1px 3px rgba(0,0,0,0.06);
-  padding:16px 16px 14px;
+  padding:9px 10px 8px;
   font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
-.an-stat-label{font-size:12px; color:var(--text-dim); font-weight:600; margin-bottom:8px;}
-.an-stat-row{display:flex; align-items:flex-end; justify-content:space-between; gap:8px;}
-.an-stat-value{font-size:22px; font-weight:700; color:var(--text); line-height:1.1;}
-.an-stat-sub{font-size:11px; color:var(--text-dim); margin-top:4px;}
-.an-stat-spark{flex:0 0 auto; width:56px; height:32px;}
-.an-ring-wrap{position:relative; width:44px; height:44px; flex:0 0 auto;}
+.an-stat-label{font-size:10px; color:var(--text-dim); font-weight:600; margin-bottom:4px;}
+.an-stat-row{display:flex; align-items:flex-end; justify-content:space-between; gap:6px;}
+.an-stat-value{font-size:15px; font-weight:700; color:var(--text); line-height:1.1;}
+.an-stat-sub{font-size:9px; color:var(--text-dim); margin-top:2px;}
+.an-stat-spark{flex:0 0 auto; width:36px; height:20px;}
+.an-ring-wrap{position:relative; width:28px; height:28px; flex:0 0 auto;}
 .an-ring-wrap svg{width:100%; height:100%;}
 .an-ring-label{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:9px; font-weight:700; color:var(--text);
+  font-size:7px; font-weight:700; color:var(--text);
 }
 
 .an-charts{
   display:flex;
-  gap:16px;
-  margin-top:16px;
-  margin-bottom:24px;
+  gap:10px;
+  margin-top:10px;
   align-items:stretch;
 }
 .an-charts .an-card{min-width:0;}
@@ -493,18 +492,18 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-bars-card{flex:1 1 0;}
 .an-card-head{
   display:flex; align-items:center; justify-content:space-between;
-  font-size:13px; font-weight:700; color:var(--text);
-  margin-bottom:12px;
+  font-size:11px; font-weight:700; color:var(--text);
+  margin-bottom:6px;
 }
 .an-pill{
-  font-size:11px; font-weight:600; color:var(--text-dim);
+  font-size:9px; font-weight:600; color:var(--text-dim);
   background:var(--surface-2); border:1px solid var(--border);
-  border-radius:20px; padding:3px 10px;
+  border-radius:20px; padding:2px 8px;
 }
-.an-equity-card svg, .an-bars-card svg{width:100%; height:150px; display:block;}
-.an-donut-wrap{display:flex; align-items:center; gap:14px;}
-.an-donut-wrap svg{width:96px; height:96px; flex:0 0 auto;}
-.an-donut-legend{display:flex; flex-direction:column; gap:8px; font-size:12px;}
+.an-equity-card svg, .an-bars-card svg{width:100%; height:76px; display:block;}
+.an-donut-wrap{display:flex; align-items:center; gap:8px;}
+.an-donut-wrap svg{width:56px; height:56px; flex:0 0 auto;}
+.an-donut-legend{display:flex; flex-direction:column; gap:4px; font-size:10px;}
 .an-donut-legend .an-leg-row{display:flex; align-items:center; gap:6px; color:var(--text);}
 .an-donut-legend .an-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
 .an-donut-legend .an-leg-sub{color:var(--text-dim); font-size:11px; margin-left:14px;}
