@@ -754,6 +754,7 @@ function initDragAndDrop(){
     block.addEventListener('drop', (e)=>{
       if(!draggedEl || draggedEl === block) return;
       e.preventDefault();
+      e.stopPropagation();
       const container = block.parentElement;
       const isColumn = container.classList.contains('block-stack');
       const rect = block.getBoundingClientRect();
@@ -767,6 +768,33 @@ function initDragAndDrop(){
       }
       block.classList.remove('drag-over-before','drag-over-after');
     });
+  });
+
+  /* Fallback: dropping on empty space inside a container (not on a specific block) appends to that container */
+  document.querySelectorAll('.dnd-container, .block-stack').forEach(container=>{
+    container.addEventListener('dragover', (e)=>{
+      if(!draggedEl) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    container.addEventListener('drop', (e)=>{
+      if(!draggedEl) return;
+      e.preventDefault();
+      if(e.target === container){
+        container.appendChild(draggedEl);
+        document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+      }
+    });
+  });
+
+  /* Global fallback so a drop anywhere on the page never gets silently rejected */
+  document.addEventListener('dragover', (e)=>{ if(draggedEl) e.preventDefault(); });
+  document.addEventListener('drop', (e)=>{
+    if(!draggedEl) return;
+    e.preventDefault();
+    if(e.target === document.body || e.target === document.documentElement){
+      document.getElementById('sheet').appendChild(draggedEl);
+    }
   });
 }
 
