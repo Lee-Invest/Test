@@ -213,12 +213,14 @@ table.grid td, table.grid th{
 }
 table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
-table.grid th{position:relative; padding:3px 14px 3px 6px;}
+table.grid th{position:relative; padding:3px 14px 3px 6px; touch-action:none;}
+table.grid th.resize-hover, table.grid th.resizing{cursor:col-resize;}
 table.grid th .col-resizer{
   position:absolute; top:0; right:0; width:10px; height:100%;
-  cursor:col-resize; z-index:5; touch-action:none;
+  pointer-events:none; z-index:5;
 }
-table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
+table.grid th .col-resizer.resizing{background:var(--accent);}
+table.grid th.resize-hover .col-resizer{background:var(--accent);}
 table.grid th .col-name{
   display:block; width:100%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -364,8 +366,9 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
 .sheet{display:flex; flex-wrap:nowrap; gap:24px; align-items:flex-start;}
 .block{position:relative; padding-top:6px; min-width:0;}
-.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
-.block-stack .block{max-width:100%;}
+.block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 auto; min-width:280px;}
+.block[data-block="funded"]{flex:0 0 280px; max-width:280px; align-self:flex-start;}
+.block[data-block="trades"]{flex:0 0 auto; min-width:280px; align-self:flex-start;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="screens"]{flex:0 0 auto; min-width:380px;}
@@ -779,13 +782,33 @@ function colWidth(key, fallback){
   return state.colWidths[key] || fallback;
 }
 
+const RESIZE_EDGE = 10;
+
+function attachColumnResize(th, key){
+  th.addEventListener('mousemove', (e)=>{
+    if(th.classList.contains('resizing')) return;
+    const rect = th.getBoundingClientRect();
+    const near = (rect.right - e.clientX) <= RESIZE_EDGE;
+    th.classList.toggle('resize-hover', near);
+  });
+  th.addEventListener('mouseleave', ()=>{
+    if(!th.classList.contains('resizing')) th.classList.remove('resize-hover');
+  });
+  th.addEventListener('mousedown', (e)=>{
+    const rect = th.getBoundingClientRect();
+    if((rect.right - e.clientX) > RESIZE_EDGE) return;
+    startColResize(e, key, th);
+  });
+}
+
 function startColResize(e, key, th){
   e.preventDefault();
   e.stopPropagation();
   const startX = e.clientX;
   const startWidth = th.getBoundingClientRect().width;
-  const resizer = e.target;
-  resizer.classList.add('resizing');
+  th.classList.add('resizing');
+  const resizerEl = th.querySelector('.col-resizer');
+  if(resizerEl) resizerEl.classList.add('resizing');
 
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
@@ -794,7 +817,8 @@ function startColResize(e, key, th){
   function onUp(){
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
-    resizer.classList.remove('resizing');
+    th.classList.remove('resizing', 'resize-hover');
+    if(resizerEl) resizerEl.classList.remove('resizing');
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
@@ -843,9 +867,8 @@ function renderTableHead(){
 
     const resizer = document.createElement('span');
     resizer.className = 'col-resizer';
-    resizer.setAttribute('draggable', 'false');
-    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
     th.appendChild(resizer);
+    attachColumnResize(th, col.key);
 
     headRow.appendChild(th);
   });
@@ -885,9 +908,8 @@ function renderTableHead(){
 
     const resizer = document.createElement('span');
     resizer.className = 'col-resizer';
-    resizer.setAttribute('draggable', 'false');
-    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.id, th));
     th.appendChild(resizer);
+    attachColumnResize(th, col.id);
 
     headRow.appendChild(th);
   });
