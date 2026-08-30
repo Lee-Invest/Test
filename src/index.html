@@ -360,43 +360,13 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .add-col-btn:hover{background:var(--hover);}
 
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
-.sheet, .row{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;}
-.row:empty{display:none;}
+.sheet{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;}
 .block{position:relative; padding-top:6px; min-width:0;}
 .block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
-.block-stack:empty{display:none;}
 .block-stack .block{max-width:100%;}
-.row > .block{flex:0 0 260px; max-width:260px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="screens"]{flex:0 0 auto; min-width:380px; max-width:100%;}
-.row-dropzone{
-  border:2px dashed var(--border-strong);
-  border-radius:10px;
-  padding:16px;
-  text-align:center;
-  font-size:12px;
-  color:var(--text-dim);
-  transition:background .12s ease, border-color .12s ease, color .12s ease;
-}
-.row-dropzone.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
-.drag-handle{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  cursor:grab;
-  color:var(--text-dim);
-  font-size:11px;
-  user-select:none;
-  margin-bottom:4px;
-  padding:2px 4px;
-  border-radius:4px;
-}
-.drag-handle:hover{background:var(--hover); color:var(--text);}
-.drag-handle .grip{letter-spacing:1px; font-size:12px;}
-.block.dragging{opacity:0.4;}
-.block.drag-over-before{box-shadow:inset 3px 0 0 var(--accent);}
-.block.drag-over-after{box-shadow:inset -3px 0 0 var(--accent);}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -465,11 +435,10 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 
 <div class="main-area">
 <div id="rowsContainer">
-<div class="sheet dnd-container row" id="sheet" data-row="row-1">
+<div class="sheet" id="sheet">
   <div class="block-stack" id="stackFundedTrades">
   <!-- Block: Funded account info -->
-  <div class="block" data-block="funded" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Funded account</div>
+  <div class="block" data-block="funded">
     <h2 class="title">Funded account</h2>
     <div class="info-box" id="infoBox">
       <b>Info:</b><br>
@@ -487,8 +456,7 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   </div>
 
   <!-- Block: Trades table -->
-  <div class="block" data-block="trades" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Trades</div>
+  <div class="block" data-block="trades">
     <div class="trades-title">Trades 2</div>
     <div class="table-scroll">
       <table class="grid" id="tradesTable">
@@ -503,29 +471,25 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   </div>
 
   <!-- Block: Overzicht Maand -->
-  <div class="block" data-block="maand" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Overzicht maand</div>
+  <div class="block" data-block="maand">
     <h2 class="title">Overzicht Maand;</h2>
     <div class="overzicht-box" id="maandBox"></div>
   </div>
 
   <!-- Block: Totaal overzicht -->
-  <div class="block" data-block="totaal" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Totaal overzicht</div>
+  <div class="block" data-block="totaal">
     <h2 class="title">Totaal overzicht;</h2>
     <div class="overzicht-box" id="totaalBox"></div>
   </div>
 
   <!-- Block: screenshots -->
-  <div class="block" data-block="screens" draggable="true">
-    <div class="drag-handle"><span class="grip">⠿⠿</span> Screenshots</div>
+  <div class="block" data-block="screens">
     <div class="screens-title">Trades screenshots and explain</div>
     <div class="table-scroll">
       <div class="screens-grid" id="screensGrid"></div>
     </div>
   </div>
 </div>
-<div class="row-dropzone" id="newRowZone">+ sleep hier een sector naartoe om een nieuwe rij eronder te maken</div>
 </div>
 </div>
 </div>
@@ -769,180 +733,6 @@ document.querySelectorAll('#themeToggle button').forEach(btn=>{
 });
 
 initTheme();
-
-/* Drag & drop reordering of the blocks, across any number of rows and vertical stacks */
-const LAYOUT_KEY = 'trade-journal-block-order-v3';
-
-function serializeContainer(el){
-  return Array.from(el.children).map(child=>{
-    if(child.classList.contains('row')){
-      return {type:'row', id:child.id, children: serializeContainer(child)};
-    }
-    if(child.classList.contains('block-stack')){
-      return {type:'stack', id:child.id, children: serializeContainer(child)};
-    }
-    if(child.classList.contains('block')){
-      return {type:'block', id:child.dataset.block};
-    }
-    return null;
-  }).filter(Boolean);
-}
-
-function createRow(id){
-  const row = document.createElement('div');
-  row.className = 'row dnd-container';
-  row.id = id || ('row-' + uid());
-  return row;
-}
-
-function applyStructure(structure, container){
-  const dropzone = document.getElementById('newRowZone');
-  structure.forEach(item=>{
-    if(item.type === 'block'){
-      const el = document.querySelector(`.block[data-block="${item.id}"]`);
-      if(el) container.appendChild(el);
-    } else if(item.type === 'stack'){
-      const stackEl = document.getElementById(item.id);
-      if(stackEl){
-        container.appendChild(stackEl);
-        applyStructure(item.children, stackEl);
-      }
-    } else if(item.type === 'row'){
-      let rowEl = document.getElementById(item.id);
-      if(!rowEl) rowEl = createRow(item.id);
-      if(container === document.getElementById('rowsContainer') && dropzone){
-        container.insertBefore(rowEl, dropzone);
-      } else {
-        container.appendChild(rowEl);
-      }
-      applyStructure(item.children, rowEl);
-    }
-  });
-}
-
-function applyBlockOrder(){
-  let structure;
-  try{ structure = JSON.parse(localStorage.getItem(LAYOUT_KEY)); }catch(e){ structure = null; }
-  if(!Array.isArray(structure)) return;
-  applyStructure(structure, document.getElementById('rowsContainer'));
-}
-
-function saveBlockOrder(){
-  const structure = serializeContainer(document.getElementById('rowsContainer'));
-  try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(structure)); }catch(e){}
-}
-
-function cleanupEmptyRows(){
-  document.querySelectorAll('.row').forEach(row=>{
-    if(row.id === 'sheet') return;
-    if(!row.querySelector('.block, .block-stack')) row.remove();
-  });
-}
-
-function initDragAndDrop(){
-  let draggedEl = null;
-
-  function clearHighlights(){
-    document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
-    document.querySelectorAll('.row-dropzone').forEach(z=>z.classList.remove('active'));
-  }
-
-  function nearestInsertionPoint(container, clientX, clientY){
-    const isColumn = container.classList.contains('block-stack');
-    const siblings = Array.from(container.children).filter(c=>c !== draggedEl && (c.classList.contains('block') || c.classList.contains('block-stack')));
-    for(const sib of siblings){
-      const rect = sib.getBoundingClientRect();
-      const mid = isColumn ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
-      const pos = isColumn ? clientY : clientX;
-      if(pos < mid) return sib;
-    }
-    return null;
-  }
-
-  document.addEventListener('dragstart', (e)=>{
-    const block = e.target.closest('.block[draggable="true"]');
-    if(!block) return;
-    draggedEl = block;
-    block.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', block.dataset.block || '');
-  });
-
-  document.addEventListener('dragend', ()=>{
-    if(!draggedEl) return;
-    draggedEl.classList.remove('dragging');
-    clearHighlights();
-    draggedEl = null;
-    cleanupEmptyRows();
-    saveBlockOrder();
-  });
-
-  document.addEventListener('dragover', (e)=>{
-    if(!draggedEl) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    clearHighlights();
-
-    const overBlock = e.target.closest('.block[draggable="true"]');
-    if(overBlock && overBlock !== draggedEl && !draggedEl.contains(overBlock)){
-      const container = overBlock.parentElement;
-      const isColumn = container.classList.contains('block-stack');
-      const rect = overBlock.getBoundingClientRect();
-      const before = isColumn
-        ? (e.clientY - rect.top) < rect.height / 2
-        : (e.clientX - rect.left) < rect.width / 2;
-      overBlock.classList.add(before ? 'drag-over-before' : 'drag-over-after');
-      return;
-    }
-    const zone = e.target.closest('.row-dropzone');
-    if(zone) zone.classList.add('active');
-  });
-
-  document.addEventListener('drop', (e)=>{
-    if(!draggedEl) return;
-    e.preventDefault();
-
-    const overBlock = e.target.closest('.block[draggable="true"]');
-    if(overBlock && overBlock !== draggedEl && !draggedEl.contains(overBlock)){
-      const container = overBlock.parentElement;
-      const isColumn = container.classList.contains('block-stack');
-      const rect = overBlock.getBoundingClientRect();
-      const before = isColumn
-        ? (e.clientY - rect.top) < rect.height / 2
-        : (e.clientX - rect.left) < rect.width / 2;
-      if(before){
-        container.insertBefore(draggedEl, overBlock);
-      } else {
-        container.insertBefore(draggedEl, overBlock.nextSibling);
-      }
-      clearHighlights();
-      return;
-    }
-
-    const zone = e.target.closest('.row-dropzone');
-    if(zone){
-      const newRow = createRow();
-      zone.parentElement.insertBefore(newRow, zone);
-      newRow.appendChild(draggedEl);
-      clearHighlights();
-      return;
-    }
-
-    const container = e.target.closest('.dnd-container, .block-stack, .row');
-    if(container){
-      const target = nearestInsertionPoint(container, e.clientX, e.clientY);
-      if(target){
-        container.insertBefore(draggedEl, target);
-      } else {
-        container.appendChild(draggedEl);
-      }
-      clearHighlights();
-    }
-  });
-}
-
-applyBlockOrder();
-initDragAndDrop();
 
 document.getElementById('addTab').onclick = ()=>{
   const t = newTab('Nieuwe maand ' + (state.tabs.length + 1));
