@@ -9,11 +9,68 @@ body{
   font-size:12px;
   padding:24px;
 }
+.layout{
+  display:flex;
+  align-items:flex-start;
+  gap:20px;
+}
+.tabs-panel{
+  width:170px;
+  flex:0 0 170px;
+  border:1px solid #999;
+  background:#fafafa;
+}
+.tabs-panel-head{
+  background:#f2f2f2;
+  border-bottom:1px solid #999;
+  font-weight:bold;
+  font-size:12px;
+  padding:6px 8px;
+}
+.tabs-list{display:flex; flex-direction:column;}
+.tab-item{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  border-bottom:1px solid #ddd;
+  padding:6px 8px;
+  cursor:pointer;
+  font-size:12px;
+}
+.tab-item:hover{background:#eef4ff;}
+.tab-item.active{background:#dceafd; font-weight:bold; border-left:3px solid #1a73e8; padding-left:5px;}
+.tab-item .tab-name{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  outline:none;
+}
+.tab-item .tab-name:focus{background:#fff; outline:1px solid #1a73e8;}
+.tab-item .tab-del{
+  border:none; background:transparent; color:#a00; font-size:11px; cursor:pointer; padding:0 2px; flex:0 0 auto;
+}
+.tab-item .tab-del:hover{color:#e00;}
+.add-tab-btn{
+  width:100%;
+  padding:7px 8px;
+  font-size:12px;
+  border:none;
+  border-top:1px solid #999;
+  background:#f2f2f2;
+  cursor:pointer;
+  text-align:left;
+}
+.add-tab-btn:hover{background:#e6e6e6;}
+
 .sheet{
   display:grid;
   grid-template-columns:280px 220px 220px 1fr;
   gap:24px;
   align-items:start;
+  flex:1;
+  min-width:0;
 }
 h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0;}
 .info-box{font-size:12px; line-height:1.5;}
@@ -141,6 +198,13 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid #1a73e8;
 
 <div class="saved" id="lastSaved"></div>
 
+<div class="layout">
+  <div class="tabs-panel">
+    <div class="tabs-panel-head">Maanden</div>
+    <div class="tabs-list" id="tabsList"></div>
+    <button class="add-tab-btn" id="addTab" type="button">+ nieuw tabblad</button>
+  </div>
+
 <div class="sheet">
   <!-- Column 1: Funded account info + trades table -->
   <div>
@@ -205,22 +269,29 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid #1a73e8;
     <div class="screens-grid" id="screensGrid"></div>
   </div>
 </div>
+</div>
 
 <script>
-const STORAGE_KEY = 'trade-journal-sheet-v1';
+const STORAGE_KEY = 'trade-journal-sheet-v2';
 const CASHOUT_PCT = 0.80;
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
-function defaultState(){
+function defaultInfo(){
   return {
-    info:{
-      l1:'Trade kapitaal: € 10.000', l2:'Max Risico altijd: 1%', l3:'Max Daily drawdown: 5%',
-      l4:'Max Drawdown: 10%', l5:'Max 3 trades open.', l6:'Datum = tp/sl geraakt',
-      l7:'<b>1</b> is Winnende trade (<b>W</b>) en <b>0</b> is een Verliezende trade (<b>V</b>).',
-      l8:'Funded 1 acc, 1 propfirm: 10.000 account.', l9:'80% payout.',
-      l10:'Target 10% Fase 1 funded - 10% &amp; 5%'
-    },
+    l1:'Trade kapitaal: € 10.000', l2:'Max Risico altijd: 1%', l3:'Max Daily drawdown: 5%',
+    l4:'Max Drawdown: 10%', l5:'Max 3 trades open.', l6:'Datum = tp/sl geraakt',
+    l7:'<b>1</b> is Winnende trade (<b>W</b>) en <b>0</b> is een Verliezende trade (<b>V</b>).',
+    l8:'Funded 1 acc, 1 propfirm: 10.000 account.', l9:'80% payout.',
+    l10:'Target 10% Fase 1 funded - 10% &amp; 5%'
+  };
+}
+
+function newTab(name){
+  return {
+    id: uid(),
+    name: name || 'Nieuwe maand',
+    info: defaultInfo(),
     trades:[
       {id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''}
     ],
@@ -235,20 +306,32 @@ function defaultState(){
   };
 }
 
+function defaultState(){
+  const t = newTab('Augustus');
+  return { tabs:[t], activeTabId: t.id };
+}
+
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      if(!parsed.screens) parsed.screens = defaultState().screens;
-      if(!parsed.maanden) parsed.maanden = 1;
-      return parsed;
+      if(parsed.tabs && parsed.tabs.length){
+        if(!parsed.activeTabId || !parsed.tabs.find(t=>t.id===parsed.activeTabId)){
+          parsed.activeTabId = parsed.tabs[0].id;
+        }
+        return parsed;
+      }
     }
   }catch(e){}
   return defaultState();
 }
 
 let state = loadState();
+
+function activeTab(){
+  return state.tabs.find(t=>t.id === state.activeTabId) || state.tabs[0];
+}
 
 function saveState(){
   try{
@@ -257,6 +340,78 @@ function saveState(){
     el.textContent = 'opgeslagen ' + new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }catch(e){}
 }
+
+function renderAll(){
+  renderTabs();
+  renderInfo();
+  renderRows();
+  renderOverzichten();
+  renderScreens();
+}
+
+function renderTabs(){
+  const list = document.getElementById('tabsList');
+  list.innerHTML = '';
+  state.tabs.forEach(tab=>{
+    const row = document.createElement('div');
+    row.className = 'tab-item' + (tab.id === state.activeTabId ? ' active' : '');
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tab-name';
+    nameEl.textContent = tab.name;
+    nameEl.title = 'dubbelklik om te hernoemen';
+    nameEl.ondblclick = (e)=>{
+      e.stopPropagation();
+      nameEl.contentEditable = 'true';
+      nameEl.focus();
+      document.execCommand('selectAll', false, null);
+    };
+    nameEl.onblur = ()=>{
+      nameEl.contentEditable = 'false';
+      tab.name = nameEl.textContent.trim() || 'Naamloos';
+      saveState();
+      renderTabs();
+    };
+    nameEl.onkeydown = (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); nameEl.blur(); }
+    };
+    row.appendChild(nameEl);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'tab-del';
+    delBtn.textContent = '✕';
+    delBtn.title = 'verwijder tabblad';
+    delBtn.onclick = (e)=>{
+      e.stopPropagation();
+      if(state.tabs.length <= 1) return;
+      const idx = state.tabs.findIndex(t=>t.id===tab.id);
+      state.tabs = state.tabs.filter(t=>t.id !== tab.id);
+      if(state.activeTabId === tab.id){
+        state.activeTabId = state.tabs[Math.max(0, idx-1)].id;
+      }
+      saveState();
+      renderAll();
+    };
+    row.appendChild(delBtn);
+
+    row.onclick = ()=>{
+      state.activeTabId = tab.id;
+      saveState();
+      renderAll();
+    };
+
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('addTab').onclick = ()=>{
+  const t = newTab('Nieuwe maand ' + (state.tabs.length + 1));
+  state.tabs.push(t);
+  state.activeTabId = t.id;
+  saveState();
+  renderAll();
+};
 
 function parseAmount(v){
   if(v === '' || v === null || v === undefined) return NaN;
@@ -281,17 +436,19 @@ function escapeAttr(v){
 }
 
 function renderInfo(){
+  const tab = activeTab();
   document.querySelectorAll('#infoBox span[data-key]').forEach(span=>{
     span.contentEditable = "true";
-    span.innerHTML = state.info[span.dataset.key];
-    span.oninput = ()=>{ state.info[span.dataset.key] = span.innerHTML; saveState(); };
+    span.innerHTML = tab.info[span.dataset.key];
+    span.oninput = ()=>{ tab.info[span.dataset.key] = span.innerHTML; saveState(); };
   });
 }
 
 function renderRows(){
+  const tab = activeTab();
   const body = document.getElementById('tradeBody');
   body.innerHTML = '';
-  state.trades.forEach(trade=>{
+  tab.trades.forEach(trade=>{
     const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
     trade.wv = wv;
 
@@ -319,7 +476,7 @@ function renderRows(){
     });
 
     tr.querySelector('.row-del').onclick = ()=>{
-      state.trades = state.trades.filter(t=>t.id !== trade.id);
+      tab.trades = tab.trades.filter(t=>t.id !== trade.id);
       saveState();
       renderRows();
       renderOverzichten();
@@ -334,7 +491,8 @@ function overzichtRow(label, valueHtml, suffix){
 }
 
 function renderOverzichten(){
-  const trades = state.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const tab = activeTab();
+  const trades = tab.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
   const totalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
   const gewonnen = trades.filter(t=> t.wv === 1).length;
   const verloren = trades.filter(t=> t.wv === 0).length;
@@ -370,13 +528,13 @@ function renderOverzichten(){
     overzichtRow('Winst rate: _____', winrate.toFixed(11).replace('.',',') + '%') +
     overzichtRow('Aantal trades: __', aantal) +
     overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
-    `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${state.maanden}</div></div>`;
+    `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
 
   const maandenField = document.getElementById('maandenField');
   if(maandenField){
     maandenField.oninput = ()=>{
       const n = parseInt(maandenField.textContent) || 1;
-      state.maanden = n;
+      tab.maanden = n;
       saveState();
     };
   }
@@ -422,9 +580,10 @@ function renderImgSlot(col, key){
 }
 
 function renderScreens(){
+  const tab = activeTab();
   const grid = document.getElementById('screensGrid');
   grid.innerHTML = '';
-  state.screens.forEach((col, idx)=>{
+  tab.screens.forEach((col, idx)=>{
     const div = document.createElement('div');
     div.className = 'screen-col';
 
@@ -450,7 +609,7 @@ function renderScreens(){
   addBtn.textContent = '+';
   addBtn.title = 'kolom toevoegen';
   addBtn.onclick = ()=>{
-    state.screens.push({id:uid(), num: state.screens.length+1, text:'', img1:null, img2:null});
+    tab.screens.push({id:uid(), num: tab.screens.length+1, text:'', img1:null, img2:null});
     saveState();
     renderScreens();
   };
@@ -458,14 +617,11 @@ function renderScreens(){
 }
 
 document.getElementById('addRow').onclick = ()=>{
-  state.trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
+  activeTab().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
   saveState();
   renderRows();
   renderOverzichten();
 };
 
-renderInfo();
-renderRows();
-renderOverzichten();
-renderScreens();
+renderAll();
 </script>
