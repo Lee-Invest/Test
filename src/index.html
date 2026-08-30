@@ -397,7 +397,48 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 .block.dragging{opacity:0.4;}
 .block.drag-over-before{box-shadow:inset 3px 0 0 var(--accent);}
 .block.drag-over-after{box-shadow:inset -3px 0 0 var(--accent);}
+
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.4);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000;
+}
+.modal-overlay[hidden]{display:none;}
+.modal-box{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px 22px;
+  max-width:320px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.25);
+  font-family:Arial, Helvetica, sans-serif;
+}
+.modal-msg{font-size:13px; color:var(--text); line-height:1.5; margin-bottom:16px;}
+.modal-actions{display:flex; justify-content:flex-end; gap:8px;}
+.modal-actions button{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:12.5px;
+  padding:7px 14px;
+  border-radius:7px;
+  border:1px solid var(--border-strong);
+  background:var(--surface-2);
+  color:var(--text);
+  cursor:pointer;
+}
+.modal-actions button:hover{background:var(--hover);}
+.modal-actions button.danger{background:var(--loss); border-color:var(--loss); color:#fff;}
+.modal-actions button.danger:hover{filter:brightness(1.08);}
 </style>
+
+<div class="modal-overlay" id="confirmModal" hidden>
+  <div class="modal-box">
+    <div class="modal-msg" id="confirmMsg"></div>
+    <div class="modal-actions">
+      <button type="button" id="confirmCancel">Annuleren</button>
+      <button type="button" id="confirmOk" class="danger">Verwijderen</button>
+    </div>
+  </div>
+</div>
 
 <div class="layout">
   <div class="tabs-panel">
@@ -494,6 +535,25 @@ const STORAGE_KEY = 'trade-journal-sheet-v2';
 const CASHOUT_PCT = 0.80;
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function showConfirm(message, onConfirm){
+  const modal = document.getElementById('confirmModal');
+  const msgEl = document.getElementById('confirmMsg');
+  const okBtn = document.getElementById('confirmOk');
+  const cancelBtn = document.getElementById('confirmCancel');
+  msgEl.textContent = message;
+  modal.hidden = false;
+
+  const cleanup = ()=>{
+    modal.hidden = true;
+    okBtn.onclick = null;
+    cancelBtn.onclick = null;
+    modal.onclick = null;
+  };
+  okBtn.onclick = ()=>{ cleanup(); onConfirm(); };
+  cancelBtn.onclick = cleanup;
+  modal.onclick = (e)=>{ if(e.target === modal) cleanup(); };
+}
 
 function defaultInfo(){
   return {
@@ -652,14 +712,15 @@ function renderTabs(){
         ev.stopPropagation();
         closeAnyTabMenu();
         if(state.tabs.length <= 1) return;
-        if(!confirm(`Tabblad "${tab.name}" verwijderen? Dit kan niet ongedaan gemaakt worden.`)) return;
-        const idx = state.tabs.findIndex(t=>t.id===tab.id);
-        state.tabs = state.tabs.filter(t=>t.id !== tab.id);
-        if(state.activeTabId === tab.id){
-          state.activeTabId = state.tabs[Math.max(0, idx-1)].id;
-        }
-        saveState();
-        renderAll();
+        showConfirm(`Tabblad "${tab.name}" verwijderen? Dit kan niet ongedaan gemaakt worden.`, ()=>{
+          const idx = state.tabs.findIndex(t=>t.id===tab.id);
+          state.tabs = state.tabs.filter(t=>t.id !== tab.id);
+          if(state.activeTabId === tab.id){
+            state.activeTabId = state.tabs[Math.max(0, idx-1)].id;
+          }
+          saveState();
+          renderAll();
+        });
       };
       menu.appendChild(delBtn);
 
@@ -981,10 +1042,11 @@ function renderTableHead(){
 
     th.appendChild(buildColHeaderDelete(()=>{
       if(totalColumnCount() <= 1) return;
-      if(!confirm(`Kolom "${col.label}" verwijderen?`)) return;
-      state.hiddenBaseColumns.push(col.key);
-      saveState();
-      renderRows();
+      showConfirm(`Kolom "${col.label}" verwijderen?`, ()=>{
+        state.hiddenBaseColumns.push(col.key);
+        saveState();
+        renderRows();
+      });
     }));
 
     const resizer = document.createElement('span');
@@ -1019,12 +1081,13 @@ function renderTableHead(){
 
     th.appendChild(buildColHeaderDelete(()=>{
       if(totalColumnCount() <= 1) return;
-      if(!confirm(`Kolom "${col.name}" verwijderen?`)) return;
-      state.extraColumns = state.extraColumns.filter(c=>c.id !== col.id);
-      state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.id]; }));
-      delete state.colWidths[col.id];
-      saveState();
-      renderRows();
+      showConfirm(`Kolom "${col.name}" verwijderen?`, ()=>{
+        state.extraColumns = state.extraColumns.filter(c=>c.id !== col.id);
+        state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.id]; }));
+        delete state.colWidths[col.id];
+        saveState();
+        renderRows();
+      });
     }));
 
     const resizer = document.createElement('span');
@@ -1245,10 +1308,11 @@ function renderScreens(){
       delBtn.title = 'kolom verwijderen';
       delBtn.className = 'screen-del-btn';
       delBtn.onclick = ()=>{
-        if(!confirm(`Screenshot-kolom ${idx + 1} verwijderen?`)) return;
-        tab.screens = tab.screens.filter(c=>c.id !== col.id);
-        saveState();
-        renderScreens();
+        showConfirm(`Screenshot-kolom ${idx + 1} verwijderen?`, ()=>{
+          tab.screens = tab.screens.filter(c=>c.id !== col.id);
+          saveState();
+          renderScreens();
+        });
       };
       num.appendChild(delBtn);
     }
