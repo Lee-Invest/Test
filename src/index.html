@@ -481,12 +481,16 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 }
 
 .an-charts{
-  display:grid;
-  grid-template-columns:1.4fr 1fr 1fr;
+  display:flex;
   gap:16px;
   margin-top:16px;
   margin-bottom:24px;
+  align-items:stretch;
 }
+.an-charts .an-card{min-width:0;}
+.an-equity-card{flex:1.4 1 0;}
+.an-donut-card{flex:1 1 0;}
+.an-bars-card{flex:1 1 0;}
 .an-card-head{
   display:flex; align-items:center; justify-content:space-between;
   font-size:13px; font-weight:700; color:var(--text);
@@ -505,12 +509,9 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-donut-legend .an-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
 .an-donut-legend .an-leg-sub{color:var(--text-dim); font-size:11px; margin-left:14px;}
 
-@media (max-width: 1300px){
-  .an-stats{grid-template-columns:repeat(3, 1fr);}
-  .an-charts{grid-template-columns:1fr; }
-}
 @media (max-width: 700px){
   .an-stats{grid-template-columns:repeat(2, 1fr);}
+  .an-charts{flex-direction:column;}
 }
 </style>
 
