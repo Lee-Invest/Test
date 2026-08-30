@@ -192,14 +192,6 @@ body{
   padding:24px;
 }
 
-.sheet{
-  display:grid;
-  grid-template-columns:280px 220px 220px 1fr;
-  gap:24px;
-  align-items:start;
-  flex:1;
-  min-width:0;
-}
 h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .info-box{font-size:12px; line-height:1.5; color:var(--text);}
 .info-box b{font-weight:bold;}
@@ -373,7 +365,8 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 }
 .block{position:relative; padding-top:6px; min-width:0;}
 .block-stack{display:flex; flex-direction:column; gap:16px; min-width:0;}
-.block-stack{grid-column:1; position:relative; z-index:2;}
+.block-stack{grid-column:1; position:relative; z-index:2; isolation:isolate;}
+.block[data-block="trades"]{position:relative; z-index:2;}
 .block[data-block="maand"]{grid-column:2;}
 .block[data-block="totaal"]{grid-column:3;}
 .block[data-block="screens"]{grid-column:4; min-width:0;}
@@ -394,6 +387,19 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   font-family:Arial, Helvetica, sans-serif;
 }
 .modal-msg{font-size:13px; color:var(--text); line-height:1.5; margin-bottom:16px;}
+.modal-input{
+  width:100%;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:13px;
+  padding:8px 10px;
+  border:1px solid var(--border-strong);
+  border-radius:7px;
+  background:var(--surface-2);
+  color:var(--text);
+  margin-bottom:16px;
+  box-sizing:border-box;
+}
+.modal-input:focus{outline:1px solid var(--accent);}
 .modal-actions{display:flex; justify-content:flex-end; gap:8px;}
 .modal-actions button{
   font-family:Arial, Helvetica, sans-serif;
@@ -416,6 +422,17 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     <div class="modal-actions">
       <button type="button" id="confirmCancel">Annuleren</button>
       <button type="button" id="confirmOk" class="danger">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="promptModal" hidden>
+  <div class="modal-box">
+    <div class="modal-msg" id="promptMsg"></div>
+    <input type="text" class="modal-input" id="promptInput">
+    <div class="modal-actions">
+      <button type="button" id="promptCancel">Annuleren</button>
+      <button type="button" id="promptOk">Toevoegen</button>
     </div>
   </div>
 </div>
@@ -527,6 +544,39 @@ function showConfirm(message, onConfirm){
   okBtn.onclick = ()=>{ cleanup(); onConfirm(); };
   cancelBtn.onclick = cleanup;
   modal.onclick = (e)=>{ if(e.target === modal) cleanup(); };
+}
+
+function showPrompt(message, defaultValue, onSubmit){
+  const modal = document.getElementById('promptModal');
+  const msgEl = document.getElementById('promptMsg');
+  const input = document.getElementById('promptInput');
+  const okBtn = document.getElementById('promptOk');
+  const cancelBtn = document.getElementById('promptCancel');
+  msgEl.textContent = message;
+  input.value = defaultValue || '';
+  modal.hidden = false;
+  input.focus();
+  input.select();
+
+  const cleanup = ()=>{
+    modal.hidden = true;
+    okBtn.onclick = null;
+    cancelBtn.onclick = null;
+    modal.onclick = null;
+    input.onkeydown = null;
+  };
+  const submit = ()=>{
+    const value = input.value;
+    cleanup();
+    onSubmit(value);
+  };
+  okBtn.onclick = submit;
+  cancelBtn.onclick = cleanup;
+  modal.onclick = (e)=>{ if(e.target === modal) cleanup(); };
+  input.onkeydown = (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); submit(); }
+    if(e.key === 'Escape'){ e.preventDefault(); cleanup(); }
+  };
 }
 
 function defaultInfo(){
@@ -924,13 +974,13 @@ function renderTableHead(){
   addTh.textContent = '+';
   addTh.title = 'nieuwe kolom toevoegen';
   addTh.onclick = ()=>{
-    const name = prompt('Naam van de nieuwe kolom:', 'Kolom ' + (state.extraColumns.length + 1));
-    if(name === null) return;
-    const col = {id: uid(), name: name.trim() || 'Kolom'};
-    state.extraColumns.push(col);
-    state.tabs.forEach(t=> t.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; }));
-    saveState();
-    renderRows();
+    showPrompt('Naam van de nieuwe kolom:', 'Kolom ' + (state.extraColumns.length + 1), (name)=>{
+      const col = {id: uid(), name: (name || '').trim() || 'Kolom'};
+      state.extraColumns.push(col);
+      state.tabs.forEach(t=> t.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; }));
+      saveState();
+      renderRows();
+    });
   };
   headRow.appendChild(addTh);
 
