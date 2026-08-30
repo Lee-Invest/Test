@@ -215,8 +215,8 @@ table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 table.grid th{position:relative;}
 table.grid th .col-resizer{
-  position:absolute; top:0; right:0; width:8px; height:100%;
-  cursor:col-resize; z-index:5; touch-action:none;
+  position:absolute; top:0; right:-3px; width:6px; height:100%;
+  cursor:col-resize; z-index:2;
 }
 table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
 table.grid th .col-name{
@@ -778,15 +778,12 @@ function colWidth(key, fallback){
 }
 
 function startColResize(e, key, th){
-  if(e.button !== undefined && e.button !== 0) return;
   e.preventDefault();
   e.stopPropagation();
   const startX = e.clientX;
   const startWidth = th.getBoundingClientRect().width;
   const resizer = e.target;
   resizer.classList.add('resizing');
-  const prevUserSelect = document.body.style.userSelect;
-  document.body.style.userSelect = 'none';
 
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
@@ -796,7 +793,6 @@ function startColResize(e, key, th){
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
     resizer.classList.remove('resizing');
-    document.body.style.userSelect = prevUserSelect;
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
