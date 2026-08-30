@@ -206,14 +206,13 @@ table.grid td, table.grid th{
 table.grid th{background:var(--surface-2); font-weight:bold; text-align:center;}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 .table-overflow{overflow:visible; width:280px;}
-table.grid th{position:relative; padding:3px 14px 3px 6px; touch-action:none;}
-table.grid th.resize-hover, table.grid th.resizing{cursor:col-resize;}
+table.grid th{position:relative; padding:3px 14px 3px 10px;}
 table.grid th .col-resizer{
   position:absolute; top:0; right:0; width:10px; height:100%;
-  pointer-events:none; z-index:5;
+  cursor:col-resize; z-index:10; touch-action:none;
+  background:var(--border-strong);
 }
-table.grid th .col-resizer.resizing{background:var(--accent);}
-table.grid th.resize-hover .col-resizer{background:var(--accent);}
+table.grid th .col-resizer:hover, table.grid th .col-resizer.resizing{background:var(--accent);}
 table.grid th .col-name{
   display:block; width:100%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -837,53 +836,39 @@ function colWidth(key, fallback){
   return state.colWidths[key] || fallback;
 }
 
-const RESIZE_EDGE = 12;
-
 function attachColumnResize(th, key){
-  th.addEventListener('pointermove', (e)=>{
-    if(th.classList.contains('resizing')) return;
-    const rect = th.getBoundingClientRect();
-    const near = (rect.right - e.clientX) <= RESIZE_EDGE;
-    th.classList.toggle('resize-hover', near);
-  });
-  th.addEventListener('pointerleave', ()=>{
-    if(!th.classList.contains('resizing')) th.classList.remove('resize-hover');
-  });
-  th.addEventListener('pointerdown', (e)=>{
-    const rect = th.getBoundingClientRect();
-    if((rect.right - e.clientX) > RESIZE_EDGE) return;
-    startColResize(e, key, th);
-  });
+  const resizerEl = th.querySelector('.col-resizer');
+  if(!resizerEl) return;
+  resizerEl.addEventListener('pointerdown', (e)=> startColResize(e, key, th, resizerEl));
 }
 
-function startColResize(e, key, th){
+function startColResize(e, key, th, resizerEl){
   e.preventDefault();
   e.stopPropagation();
   const startX = e.clientX;
   const startWidth = th.getBoundingClientRect().width;
   th.classList.add('resizing');
-  const resizerEl = th.querySelector('.col-resizer');
-  if(resizerEl) resizerEl.classList.add('resizing');
+  resizerEl.classList.add('resizing');
 
-  try{ th.setPointerCapture(e.pointerId); }catch(err){}
+  try{ resizerEl.setPointerCapture(e.pointerId); }catch(err){}
 
   function onMove(ev){
     const newWidth = Math.max(28, Math.round(startWidth + (ev.clientX - startX)));
     th.style.width = newWidth + 'px';
   }
   function onUp(ev){
-    th.removeEventListener('pointermove', onMove);
-    th.removeEventListener('pointerup', onUp);
-    th.removeEventListener('pointercancel', onUp);
-    try{ th.releasePointerCapture(e.pointerId); }catch(err){}
-    th.classList.remove('resizing', 'resize-hover');
-    if(resizerEl) resizerEl.classList.remove('resizing');
+    resizerEl.removeEventListener('pointermove', onMove);
+    resizerEl.removeEventListener('pointerup', onUp);
+    resizerEl.removeEventListener('pointercancel', onUp);
+    try{ resizerEl.releasePointerCapture(e.pointerId); }catch(err){}
+    th.classList.remove('resizing');
+    resizerEl.classList.remove('resizing');
     state.colWidths[key] = parseInt(th.style.width);
     saveState();
   }
-  th.addEventListener('pointermove', onMove);
-  th.addEventListener('pointerup', onUp);
-  th.addEventListener('pointercancel', onUp);
+  resizerEl.addEventListener('pointermove', onMove);
+  resizerEl.addEventListener('pointerup', onUp);
+  resizerEl.addEventListener('pointercancel', onUp);
 }
 
 function visibleBaseColumns(){
