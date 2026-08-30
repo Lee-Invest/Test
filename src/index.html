@@ -263,20 +263,16 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   flex:0 0 28px;
   display:flex; align-items:center; justify-content:center;
   background:var(--surface-2);
+  border-bottom:1px solid var(--border-strong);
   cursor:pointer;
   color:var(--text-dim);
-  font-size:13px;
-  font-weight:normal;
 }
-.tt-add-col:hover{background:var(--hover); color:var(--accent);}
+.tt-add-col:hover{background:var(--hover);}
 .tt-row-del{
-  flex:0 0 28px;
+  flex:0 0 24px;
   display:flex; align-items:center; justify-content:center;
-  border:none;
-  background:transparent; cursor:pointer; color:var(--text-dim); font-size:11px;
-  transition:color .12s ease, background .12s ease;
+  border:none; background:transparent; cursor:pointer; color:var(--loss); font-size:12px;
 }
-.tt-row-del:hover{color:var(--loss); background:var(--loss-bg);}
 
 .overzicht-box{display:flex; flex-direction:column; gap:6px;}
 .overzicht-row{display:flex; align-items:center; gap:8px; justify-content:space-between;}
