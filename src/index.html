@@ -224,6 +224,12 @@ table.grid th .col-name{
 }
 table.grid th.extra-th{cursor:default;}
 table.grid th .col-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
+table.grid th .col-del-btn{
+  position:absolute; top:1px; right:9px; font-size:9px; cursor:pointer; color:var(--text-dim);
+  opacity:0; transition:opacity .12s ease;
+}
+table.grid th:hover .col-del-btn{opacity:1;}
+table.grid th .col-del-btn:hover{color:var(--loss);}
 .add-col-th{
   width:28px; padding:0; text-align:center; cursor:pointer; color:var(--text-dim);
 }
@@ -287,7 +293,14 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   border-bottom:1px solid var(--border-strong);
   padding:4px;
   color:var(--text);
+  position:relative;
 }
+.screen-col .num .screen-del-btn{
+  position:absolute; top:3px; right:5px; font-size:9px; cursor:pointer;
+  color:var(--text-dim); font-weight:normal; opacity:0; transition:opacity .12s ease;
+}
+.screen-col:hover .screen-del-btn{opacity:1;}
+.screen-col .num .screen-del-btn:hover{color:var(--loss);}
 .screen-col textarea{
   width:100%;
   min-height:70px;
@@ -346,15 +359,27 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
 }
 .add-col-btn:hover{background:var(--hover);}
 
-.sheet{display:flex; flex-wrap:wrap;}
+#rowsContainer{display:flex; flex-direction:column; gap:24px;}
+.sheet, .row{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;}
+.row:empty{display:none;}
 .block{position:relative; padding-top:6px; min-width:0;}
 .block-stack{display:flex; flex-direction:column; gap:16px; flex:0 0 280px; max-width:280px; min-width:0;}
 .block-stack:empty{display:none;}
 .block-stack .block{max-width:100%;}
-.sheet > .block{flex:0 0 260px; max-width:260px;}
+.row > .block{flex:0 0 260px; max-width:260px;}
 .block[data-block="maand"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="totaal"]{flex:0 0 220px; max-width:220px;}
 .block[data-block="screens"]{flex:0 0 auto; min-width:380px; max-width:100%;}
+.row-dropzone{
+  border:2px dashed var(--border-strong);
+  border-radius:10px;
+  padding:16px;
+  text-align:center;
+  font-size:12px;
+  color:var(--text-dim);
+  transition:background .12s ease, border-color .12s ease, color .12s ease;
+}
+.row-dropzone.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
 .drag-handle{
   display:flex;
   align-items:center;
@@ -398,7 +423,8 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   </div>
 
 <div class="main-area">
-<div class="sheet dnd-container" id="sheet">
+<div id="rowsContainer">
+<div class="sheet dnd-container row" id="sheet" data-row="row-1">
   <div class="block-stack" id="stackFundedTrades">
   <!-- Block: Funded account info -->
   <div class="block" data-block="funded" draggable="true">
@@ -458,6 +484,8 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     </div>
   </div>
 </div>
+<div class="row-dropzone" id="newRowZone">+ sleep hier een sector naartoe om een nieuwe rij eronder te maken</div>
+</div>
 </div>
 </div>
 
@@ -507,7 +535,7 @@ const BASE_COLUMNS = [
 
 function defaultState(){
   const t = newTab('Augustus');
-  return { tabs:[t], activeTabId: t.id, extraColumns:[], colWidths:{} };
+  return { tabs:[t], activeTabId: t.id, extraColumns:[], colWidths:{}, hiddenBaseColumns:[] };
 }
 
 function loadState(){
@@ -521,6 +549,7 @@ function loadState(){
         }
         if(!Array.isArray(parsed.extraColumns)) parsed.extraColumns = [];
         if(!parsed.colWidths || typeof parsed.colWidths !== 'object') parsed.colWidths = {};
+        if(!Array.isArray(parsed.hiddenBaseColumns)) parsed.hiddenBaseColumns = [];
         return parsed;
       }
     }
@@ -680,11 +709,14 @@ document.querySelectorAll('#themeToggle button').forEach(btn=>{
 
 initTheme();
 
-/* Drag & drop reordering of the blocks (container-aware: sheet row or a vertical stack) */
-const LAYOUT_KEY = 'trade-journal-block-order-v2';
+/* Drag & drop reordering of the blocks, across any number of rows and vertical stacks */
+const LAYOUT_KEY = 'trade-journal-block-order-v3';
 
 function serializeContainer(el){
   return Array.from(el.children).map(child=>{
+    if(child.classList.contains('row')){
+      return {type:'row', id:child.id, children: serializeContainer(child)};
+    }
     if(child.classList.contains('block-stack')){
       return {type:'stack', id:child.id, children: serializeContainer(child)};
     }
@@ -695,7 +727,15 @@ function serializeContainer(el){
   }).filter(Boolean);
 }
 
+function createRow(id){
+  const row = document.createElement('div');
+  row.className = 'row dnd-container';
+  row.id = id || ('row-' + uid());
+  return row;
+}
+
 function applyStructure(structure, container){
+  const dropzone = document.getElementById('newRowZone');
   structure.forEach(item=>{
     if(item.type === 'block'){
       const el = document.querySelector(`.block[data-block="${item.id}"]`);
@@ -706,6 +746,15 @@ function applyStructure(structure, container){
         container.appendChild(stackEl);
         applyStructure(item.children, stackEl);
       }
+    } else if(item.type === 'row'){
+      let rowEl = document.getElementById(item.id);
+      if(!rowEl) rowEl = createRow(item.id);
+      if(container === document.getElementById('rowsContainer') && dropzone){
+        container.insertBefore(rowEl, dropzone);
+      } else {
+        container.appendChild(rowEl);
+      }
+      applyStructure(item.children, rowEl);
     }
   });
 }
@@ -714,61 +763,28 @@ function applyBlockOrder(){
   let structure;
   try{ structure = JSON.parse(localStorage.getItem(LAYOUT_KEY)); }catch(e){ structure = null; }
   if(!Array.isArray(structure)) return;
-  applyStructure(structure, document.getElementById('sheet'));
+  applyStructure(structure, document.getElementById('rowsContainer'));
 }
 
 function saveBlockOrder(){
-  const structure = serializeContainer(document.getElementById('sheet'));
+  const structure = serializeContainer(document.getElementById('rowsContainer'));
   try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(structure)); }catch(e){}
+}
+
+function cleanupEmptyRows(){
+  document.querySelectorAll('.row').forEach(row=>{
+    if(row.id === 'sheet') return;
+    if(!row.querySelector('.block, .block-stack')) row.remove();
+  });
 }
 
 function initDragAndDrop(){
   let draggedEl = null;
 
-  document.querySelectorAll('.block').forEach(block=>{
-    block.addEventListener('dragstart', (e)=>{
-      draggedEl = block;
-      block.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', block.dataset.block);
-    });
-    block.addEventListener('dragend', ()=>{
-      block.classList.remove('dragging');
-      document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
-      draggedEl = null;
-      saveBlockOrder();
-    });
-    block.addEventListener('dragover', (e)=>{
-      if(!draggedEl || draggedEl === block) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const container = block.parentElement;
-      const isColumn = container.classList.contains('block-stack');
-      const rect = block.getBoundingClientRect();
-      const before = isColumn
-        ? (e.clientY - rect.top) < rect.height / 2
-        : (e.clientX - rect.left) < rect.width / 2;
-      document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
-      block.classList.add(before ? 'drag-over-before' : 'drag-over-after');
-    });
-    block.addEventListener('drop', (e)=>{
-      if(!draggedEl || draggedEl === block) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const container = block.parentElement;
-      const isColumn = container.classList.contains('block-stack');
-      const rect = block.getBoundingClientRect();
-      const before = isColumn
-        ? (e.clientY - rect.top) < rect.height / 2
-        : (e.clientX - rect.left) < rect.width / 2;
-      if(before){
-        container.insertBefore(draggedEl, block);
-      } else {
-        container.insertBefore(draggedEl, block.nextSibling);
-      }
-      block.classList.remove('drag-over-before','drag-over-after');
-    });
-  });
+  function clearHighlights(){
+    document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+    document.querySelectorAll('.row-dropzone').forEach(z=>z.classList.remove('active'));
+  }
 
   function nearestInsertionPoint(container, clientX, clientY){
     const isColumn = container.classList.contains('block-stack');
@@ -782,35 +798,84 @@ function initDragAndDrop(){
     return null;
   }
 
-  /* Fallback: dropping on empty space inside a container (gaps between blocks, or below/beside the last one) */
-  document.querySelectorAll('.dnd-container, .block-stack').forEach(container=>{
-    container.addEventListener('dragover', (e)=>{
-      if(!draggedEl) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    });
-    container.addEventListener('drop', (e)=>{
-      if(!draggedEl) return;
-      e.preventDefault();
-      if(e.target === container){
-        const target = nearestInsertionPoint(container, e.clientX, e.clientY);
-        if(target){
-          container.insertBefore(draggedEl, target);
-        } else {
-          container.appendChild(draggedEl);
-        }
-        document.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
-      }
-    });
+  document.addEventListener('dragstart', (e)=>{
+    const block = e.target.closest('.block[draggable="true"]');
+    if(!block) return;
+    draggedEl = block;
+    block.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', block.dataset.block || '');
   });
 
-  /* Global fallback so a drop anywhere on the page never gets silently rejected */
-  document.addEventListener('dragover', (e)=>{ if(draggedEl) e.preventDefault(); });
+  document.addEventListener('dragend', ()=>{
+    if(!draggedEl) return;
+    draggedEl.classList.remove('dragging');
+    clearHighlights();
+    draggedEl = null;
+    cleanupEmptyRows();
+    saveBlockOrder();
+  });
+
+  document.addEventListener('dragover', (e)=>{
+    if(!draggedEl) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    clearHighlights();
+
+    const overBlock = e.target.closest('.block[draggable="true"]');
+    if(overBlock && overBlock !== draggedEl && !draggedEl.contains(overBlock)){
+      const container = overBlock.parentElement;
+      const isColumn = container.classList.contains('block-stack');
+      const rect = overBlock.getBoundingClientRect();
+      const before = isColumn
+        ? (e.clientY - rect.top) < rect.height / 2
+        : (e.clientX - rect.left) < rect.width / 2;
+      overBlock.classList.add(before ? 'drag-over-before' : 'drag-over-after');
+      return;
+    }
+    const zone = e.target.closest('.row-dropzone');
+    if(zone) zone.classList.add('active');
+  });
+
   document.addEventListener('drop', (e)=>{
     if(!draggedEl) return;
     e.preventDefault();
-    if(e.target === document.body || e.target === document.documentElement){
-      document.getElementById('sheet').appendChild(draggedEl);
+
+    const overBlock = e.target.closest('.block[draggable="true"]');
+    if(overBlock && overBlock !== draggedEl && !draggedEl.contains(overBlock)){
+      const container = overBlock.parentElement;
+      const isColumn = container.classList.contains('block-stack');
+      const rect = overBlock.getBoundingClientRect();
+      const before = isColumn
+        ? (e.clientY - rect.top) < rect.height / 2
+        : (e.clientX - rect.left) < rect.width / 2;
+      if(before){
+        container.insertBefore(draggedEl, overBlock);
+      } else {
+        container.insertBefore(draggedEl, overBlock.nextSibling);
+      }
+      clearHighlights();
+      return;
+    }
+
+    const zone = e.target.closest('.row-dropzone');
+    if(zone){
+      const newRow = createRow();
+      zone.parentElement.insertBefore(newRow, zone);
+      newRow.appendChild(draggedEl);
+      clearHighlights();
+      return;
+    }
+
+    const container = e.target.closest('.dnd-container, .block-stack, .row');
+    if(container){
+      const target = nearestInsertionPoint(container, e.clientX, e.clientY);
+      if(target){
+        container.insertBefore(draggedEl, target);
+      } else {
+        container.appendChild(draggedEl);
+      }
+      clearHighlights();
     }
   });
 }
@@ -884,15 +949,50 @@ function startColResize(e, key, th){
   document.addEventListener('mouseup', onUp);
 }
 
+function visibleBaseColumns(){
+  return BASE_COLUMNS.filter(c=> !state.hiddenBaseColumns.includes(c.key));
+}
+
+function totalColumnCount(){
+  return visibleBaseColumns().length + state.extraColumns.length;
+}
+
+function buildColHeaderDelete(onDelete){
+  const delBtn = document.createElement('span');
+  delBtn.textContent = '✕';
+  delBtn.title = 'kolom verwijderen';
+  delBtn.className = 'col-del-btn';
+  delBtn.onclick = onDelete;
+  return delBtn;
+}
+
 function renderTableHead(){
   const headRow = document.getElementById('tradesHeadRow');
   headRow.innerHTML = '';
 
-  BASE_COLUMNS.forEach(col=>{
+  visibleBaseColumns().forEach(col=>{
     const th = document.createElement('th');
     th.style.width = colWidth(col.key, col.width) + 'px';
-    th.innerHTML = `<span class="col-name">${col.label}</span><span class="col-resizer" draggable="false"></span>`;
-    th.querySelector('.col-resizer').addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'col-name';
+    nameSpan.textContent = col.label;
+    th.appendChild(nameSpan);
+
+    th.appendChild(buildColHeaderDelete(()=>{
+      if(totalColumnCount() <= 1) return;
+      if(!confirm(`Kolom "${col.label}" verwijderen?`)) return;
+      state.hiddenBaseColumns.push(col.key);
+      saveState();
+      renderRows();
+    }));
+
+    const resizer = document.createElement('span');
+    resizer.className = 'col-resizer';
+    resizer.setAttribute('draggable', 'false');
+    resizer.addEventListener('mousedown', (e)=> startColResize(e, col.key, th));
+    th.appendChild(resizer);
+
     headRow.appendChild(th);
   });
 
@@ -917,19 +1017,15 @@ function renderTableHead(){
     nameSpan.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); nameSpan.blur(); } };
     th.appendChild(nameSpan);
 
-    const delBtn = document.createElement('span');
-    delBtn.textContent = '✕';
-    delBtn.title = 'kolom verwijderen';
-    delBtn.style.cssText = 'position:absolute; top:1px; right:8px; font-size:9px; cursor:pointer; color:var(--text-dim);';
-    delBtn.onclick = ()=>{
+    th.appendChild(buildColHeaderDelete(()=>{
+      if(totalColumnCount() <= 1) return;
       if(!confirm(`Kolom "${col.name}" verwijderen?`)) return;
       state.extraColumns = state.extraColumns.filter(c=>c.id !== col.id);
       state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.id]; }));
       delete state.colWidths[col.id];
       saveState();
       renderRows();
-    };
-    th.appendChild(delBtn);
+    }));
 
     const resizer = document.createElement('span');
     resizer.className = 'col-resizer';
@@ -965,20 +1061,46 @@ function renderRows(){
   const tab = activeTab();
   const body = document.getElementById('tradeBody');
   body.innerHTML = '';
+  const cols = visibleBaseColumns();
+
   tab.trades.forEach(trade=>{
     if(!trade.extra) trade.extra = {};
     const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
     trade.wv = wv;
 
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" placeholder="dd-mm" data-field="datum" value="${escapeAttr(trade.datum)}"></td>
-      <td><input type="text" placeholder="asset" data-field="asset" value="${escapeAttr(trade.asset)}"></td>
-      <td><input type="text" inputmode="decimal" placeholder="300 of -100" data-field="resultaat" value="${escapeAttr(trade.resultaat)}"></td>
-      <td><input type="text" inputmode="decimal" data-field="rr" value="${escapeAttr(trade.rr)}"></td>
-      <td style="text-align:center; font-weight:bold; ${wv===1?'color:var(--win);':(wv===0?'color:var(--loss);':'')}">${wv===1?'1':(wv===0?'0':'')}</td>
-      <td><input type="text" placeholder="notitie" data-field="notities" value="${escapeAttr(trade.notities)}"></td>
-    `;
+    let wvCell = null;
+
+    cols.forEach(col=>{
+      const td = document.createElement('td');
+      if(col.key === 'wv'){
+        td.style.textAlign = 'center';
+        td.style.fontWeight = 'bold';
+        td.textContent = wv===1?'1':(wv===0?'0':'');
+        td.style.color = wv===1?'var(--win)':(wv===0?'var(--loss)':'');
+        wvCell = td;
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        if(col.key === 'resultaat' || col.key === 'rr') input.inputMode = 'decimal';
+        input.placeholder = col.placeholder || '';
+        input.value = trade[col.key] || '';
+        input.oninput = ()=>{
+          trade[col.key] = input.value;
+          if(col.key === 'resultaat'){
+            trade.wv = computeWV(trade.resultaat);
+            if(wvCell){
+              wvCell.textContent = trade.wv===1?'1':(trade.wv===0?'0':'');
+              wvCell.style.color = trade.wv===1?'var(--win)':(trade.wv===0?'var(--loss)':'');
+            }
+          }
+          saveState();
+          renderOverzichten();
+        };
+        td.appendChild(input);
+      }
+      tr.appendChild(td);
+    });
 
     state.extraColumns.forEach(col=>{
       const td = document.createElement('td');
@@ -1001,20 +1123,6 @@ function renderRows(){
     delBtn.textContent = '✕';
     delTd.appendChild(delBtn);
     tr.appendChild(delTd);
-
-    tr.querySelectorAll('input[data-field]').forEach(inp=>{
-      inp.oninput = ()=>{
-        trade[inp.dataset.field] = inp.value;
-        if(inp.dataset.field === 'resultaat'){
-          trade.wv = computeWV(trade.resultaat);
-          const wvCell = tr.children[4];
-          wvCell.textContent = trade.wv===1?'1':(trade.wv===0?'0':'');
-          wvCell.style.color = trade.wv===1?'var(--win)':(trade.wv===0?'var(--loss)':'');
-        }
-        saveState();
-        renderOverzichten();
-      };
-    });
 
     delBtn.onclick = ()=>{
       tab.trades = tab.trades.filter(t=>t.id !== trade.id);
@@ -1130,7 +1238,20 @@ function renderScreens(){
 
     const num = document.createElement('div');
     num.className = 'num';
-    num.textContent = idx + 1;
+    num.innerHTML = `<span>${idx + 1}</span>`;
+    if(tab.screens.length > 1){
+      const delBtn = document.createElement('span');
+      delBtn.textContent = '✕';
+      delBtn.title = 'kolom verwijderen';
+      delBtn.className = 'screen-del-btn';
+      delBtn.onclick = ()=>{
+        if(!confirm(`Screenshot-kolom ${idx + 1} verwijderen?`)) return;
+        tab.screens = tab.screens.filter(c=>c.id !== col.id);
+        saveState();
+        renderScreens();
+      };
+      num.appendChild(delBtn);
+    }
     div.appendChild(num);
 
     const ta = document.createElement('textarea');
