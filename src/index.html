@@ -446,14 +446,19 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .modal-actions button.danger{background:var(--loss); border-color:var(--loss); color:#fff;}
 .modal-actions button.danger:hover{filter:brightness(1.08);}
 
-.equity-row{display:flex; justify-content:flex-end; margin-top:8px;}
+.equity-row{position:static;}
 .equity-block{
+  position:fixed;
+  right:24px;
+  bottom:24px;
   width:380px;
-  max-width:100%;
+  max-width:calc(100vw - 48px);
   box-sizing:border-box;
   border:1px solid var(--border-strong);
   padding:12px 14px 14px;
   background:var(--surface);
+  box-shadow:0 8px 24px rgba(0,0,0,0.15);
+  z-index:50;
 }
 .equity-block svg{width:100%; height:150px; display:block;}
 .equity-legend{
