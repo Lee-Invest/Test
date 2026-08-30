@@ -328,6 +328,30 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   color:var(--text-dim);
 }
 .add-col-btn:hover{background:var(--hover);}
+
+.sheet{display:flex; flex-wrap:wrap;}
+.block{position:relative; padding-top:6px;}
+.block[data-block="trades"]{flex:0 0 280px;}
+.block[data-block="maand"]{flex:0 0 220px;}
+.block[data-block="totaal"]{flex:0 0 220px;}
+.block[data-block="screens"]{flex:1 1 380px; min-width:380px;}
+.drag-handle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:grab;
+  color:var(--text-dim);
+  font-size:11px;
+  user-select:none;
+  margin-bottom:4px;
+  padding:2px 4px;
+  border-radius:4px;
+}
+.drag-handle:hover{background:var(--hover); color:var(--text);}
+.drag-handle .grip{letter-spacing:1px; font-size:12px;}
+.block.dragging{opacity:0.4;}
+.block.drag-over-before{box-shadow:inset 3px 0 0 var(--accent);}
+.block.drag-over-after{box-shadow:inset -3px 0 0 var(--accent);}
 </style>
 
 <div class="layout">
@@ -354,9 +378,10 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
   </div>
 
 <div class="main-area">
-<div class="sheet">
-  <!-- Column 1: Funded account info + trades table -->
-  <div>
+<div class="sheet" id="sheet">
+  <!-- Block: Funded account info + trades table -->
+  <div class="block" data-block="trades" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Trades</div>
     <h2 class="title">Funded account</h2>
     <div class="info-box" id="infoBox">
       <b>Info:</b><br>
@@ -390,30 +415,23 @@ table.grid td input:focus, table.grid td select:focus{outline:1px solid var(--ac
     <button class="small-add" id="addRow" type="button">+ trade</button>
   </div>
 
-  <!-- Column 2: arrow + Overzicht Maand -->
-  <div>
-    <div class="arrow-wrap">
-      <svg width="220" height="60" viewbox="0 0 220 60">
-        <path d="M5 40 Q 110 -10 215 30" stroke="#333" stroke-width="1.3" fill="none" marker-end="url(#arrowhead)"></path>
-        <defs>
-          <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="#333"></path>
-          </marker>
-        </defs>
-      </svg>
-    </div>
+  <!-- Block: Overzicht Maand -->
+  <div class="block" data-block="maand" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Overzicht maand</div>
     <h2 class="title">Overzicht Maand;</h2>
     <div class="overzicht-box" id="maandBox"></div>
   </div>
 
-  <!-- Column 3: Totaal overzicht -->
-  <div>
+  <!-- Block: Totaal overzicht -->
+  <div class="block" data-block="totaal" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Totaal overzicht</div>
     <h2 class="title">Totaal overzicht;</h2>
     <div class="overzicht-box" id="totaalBox"></div>
   </div>
 
-  <!-- Column 4: screenshots -->
-  <div>
+  <!-- Block: screenshots -->
+  <div class="block" data-block="screens" draggable="true">
+    <div class="drag-handle"><span class="grip">⠿⠿</span> Screenshots</div>
     <div class="screens-title">Trades screenshots and explain</div>
     <div class="screens-grid" id="screensGrid"></div>
   </div>
@@ -628,6 +646,70 @@ document.querySelectorAll('#themeToggle button').forEach(btn=>{
 });
 
 initTheme();
+
+/* Drag & drop reordering of the blocks */
+const LAYOUT_KEY = 'trade-journal-block-order';
+
+function applyBlockOrder(){
+  let order;
+  try{ order = JSON.parse(localStorage.getItem(LAYOUT_KEY)); }catch(e){ order = null; }
+  if(!Array.isArray(order)) return;
+  const sheet = document.getElementById('sheet');
+  order.forEach(id=>{
+    const el = sheet.querySelector(`.block[data-block="${id}"]`);
+    if(el) sheet.appendChild(el);
+  });
+}
+
+function saveBlockOrder(){
+  const sheet = document.getElementById('sheet');
+  const order = Array.from(sheet.querySelectorAll('.block')).map(el=>el.dataset.block);
+  try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(order)); }catch(e){}
+}
+
+function initDragAndDrop(){
+  const sheet = document.getElementById('sheet');
+  let draggedEl = null;
+
+  sheet.querySelectorAll('.block').forEach(block=>{
+    block.addEventListener('dragstart', (e)=>{
+      draggedEl = block;
+      block.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', block.dataset.block);
+    });
+    block.addEventListener('dragend', ()=>{
+      block.classList.remove('dragging');
+      sheet.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+      draggedEl = null;
+      saveBlockOrder();
+    });
+    block.addEventListener('dragover', (e)=>{
+      if(!draggedEl || draggedEl === block) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = block.getBoundingClientRect();
+      const before = (e.clientX - rect.left) < rect.width / 2;
+      sheet.querySelectorAll('.block').forEach(b=>b.classList.remove('drag-over-before','drag-over-after'));
+      block.classList.add(before ? 'drag-over-before' : 'drag-over-after');
+    });
+    block.addEventListener('drop', (e)=>{
+      if(!draggedEl || draggedEl === block) return;
+      e.preventDefault();
+      const rect = block.getBoundingClientRect();
+      const before = (e.clientX - rect.left) < rect.width / 2;
+      if(before){
+        sheet.insertBefore(draggedEl, block);
+      } else {
+        sheet.insertBefore(draggedEl, block.nextSibling);
+      }
+      block.classList.remove('drag-over-before','drag-over-after');
+    });
+  });
+}
+
+applyBlockOrder();
+initDragAndDrop();
 
 document.getElementById('addTab').onclick = ()=>{
   const t = newTab('Nieuwe maand ' + (state.tabs.length + 1));
