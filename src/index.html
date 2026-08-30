@@ -446,10 +446,11 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .modal-actions button.danger{background:var(--loss); border-color:var(--loss); color:#fff;}
 .modal-actions button.danger:hover{filter:brightness(1.08);}
 
-.equity-row{display:flex; justify-content:center; margin-top:8px;}
+.equity-row{width:100%; margin-top:8px;}
 .equity-block{
-  width:380px;
-  max-width:100%;
+  width:100%;
+  max-width:600px;
+  box-sizing:border-box;
   border:1px solid var(--border-strong);
   padding:12px 14px 14px;
   background:var(--surface);
