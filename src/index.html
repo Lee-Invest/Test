@@ -1,16 +1,12 @@
 <title>Trade Journal</title>
 <meta charset="UTF-8">
-<meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
 (function(){
-  // Detect the real device width before anything switches the viewport meta.
+  // Detect the real device width once, up front, to drive the mobile
+  // sidebar drawer (see html.is-mobile rules below).
   if(window.innerWidth <= 860){
     document.documentElement.classList.add('is-mobile');
-    // Give the fixed-pixel desktop grid a wide enough canvas to lay out
-    // without columns collapsing, then let the browser auto-zoom the whole
-    // page to fit the screen (the user can still pinch in/out from there).
-    var vp = document.getElementById('viewportMeta');
-    if(vp) vp.setAttribute('content', 'width=1400');
   }
 })();
 </script>
@@ -489,6 +485,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   column-gap:24px;
   row-gap:8px;
   align-items:start;
+  min-width:1200px;
 }
 .block{position:relative; padding-top:6px; min-width:0;}
 .block[data-block="funded"]{grid-column:1;}
