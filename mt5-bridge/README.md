@@ -1,5 +1,10 @@
 # MT5 → EA/bridge → API → Trade Journal
 
+> **Gebruik je een gratis PHP-only host (InfinityFree-achtig, "freehost")?**
+> Sla het Python-gedeelte hieronder over en ga direct naar
+> [PHP-variant voor gratis hosting](#php-variant-voor-gratis-hosting) — die
+> werkt met alleen bestanden uploaden, zonder een proces te hoeven starten.
+
 Deze map bevat de twee stukken die je zelf moet draaien om MetaTrader 5
 automatisch te koppelen aan de Trade Journal webpagina:
 
@@ -81,3 +86,74 @@ de pagina daarna zelf steeds opnieuw op zolang de pagina open staat.
 serieuzer gebruik kun je dit vervangen door een echte database (SQLite/
 Postgres) zonder dat de EA of de Trade Journal pagina hoeven te veranderen —
 zolang `/ingest` en `/trades` hetzelfde contract blijven volgen.
+
+---
+
+## PHP-variant voor gratis hosting
+
+Gratis "freehost"-achtige diensten draaien meestal **alleen PHP** en staan
+geen continu draaiend Python-proces toe. De map `php/` bevat exact dezelfde
+`/ingest` en `/trades` functionaliteit, maar dan als gewone PHP-bestanden —
+die werken op vrijwel elke gratis PHP-host zonder iets te hoeven "starten".
+
+### Bestanden
+
+- `php/config.php` — instellingen (optioneel secret) + opslag-helpers.
+- `php/ingest.php` — endpoint waar de EA naartoe post.
+- `php/trades.php` — endpoint waar de Trade Journal pagina van leest.
+
+### 1. Uploaden
+
+1. Log in op het dashboard van je host en open **Bestandsbeheer** (of gebruik
+   FTP-gegevens die je host je geeft, met een FTP-programma zoals FileZilla).
+2. Ga naar de map die publiek bereikbaar is — heet meestal `public_html`,
+   `htdocs`, of `www`.
+3. Maak daarin een submap, bv. `mt5-bridge`.
+4. Upload `config.php`, `ingest.php` en `trades.php` uit deze `php/` map
+   naar die submap.
+5. Zorg dat de map **schrijfrechten** heeft (voor `trades.json`, dat PHP zelf
+   aanmaakt) — meestal via Bestandsbeheer, rechtermuisklik → Permissions →
+   `755` of `775` op de map.
+
+### 2. Jouw adressen noteren
+
+Na het uploaden zijn de endpoints bereikbaar op (vul jouw eigen domein in,
+te vinden in het hosting-dashboard):
+
+```
+https://jouwdomein.freehost-voorbeeld.com/mt5-bridge/ingest.php
+https://jouwdomein.freehost-voorbeeld.com/mt5-bridge/trades.php
+```
+
+(Sommige gratis hosts geven je een subdomein zoals
+`jouwnaam.freehost.com` — gebruik precies wat je host je toont.)
+
+### 3. EA instellen
+
+In `TradeJournalBridge.mq5` (zie boven voor installatie-stappen):
+
+- `BridgeUrl` = het `ingest.php`-adres hierboven.
+- `AccountKey` = zelfgekozen naam voor dit account.
+- Voeg het domein toe bij **Tools → Opties → Expert Advisors → Allow
+  WebRequest for listed URL**.
+
+### 4. Koppelen in de Trade Journal
+
+Bij **"MT5 koppelen"**:
+
+- **API URL** = het `trades.php`-adres hierboven.
+- **Account key** = exact dezelfde waarde als in de EA.
+
+Klik op **"Opslaan & synchroniseren"** — als het goed is verschijnen de
+trades die de EA al heeft verstuurd meteen in de tabel.
+
+### Let op bij gratis hosts
+
+- Sommige gratis hosts **slapen** of pauzeren een site na een tijd van geen
+  bezoek, of blokkeren uitgaande requests van MT5's `WebRequest`. Test dus
+  eerst handmatig: open `trades.php?account=test` in je browser — je moet
+  `[]` (een lege lijst) terugkrijgen, geen foutpagina.
+- Gratis hosts kunnen ook HTTPS missen of een self-signed certificaat
+  gebruiken — MT5's `WebRequest` vereist een geldig HTTPS-certificaat, dus
+  controleer dat je adres met `https://` gewoon in een browser opent zonder
+  waarschuwing.
