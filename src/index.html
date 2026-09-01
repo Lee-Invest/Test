@@ -1,6 +1,6 @@
 <title>Trade Journal</title>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 :root{
   --bg:#ffffff;
@@ -596,17 +596,10 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-donut-legend .an-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
 .an-donut-legend .an-leg-sub{color:var(--text-dim); font-size:11px; margin-left:14px;}
 
-@media (max-width: 700px){
-  .an-stats{grid-template-columns:repeat(2, 1fr);}
-  .an-charts{flex-direction:column;}
-}
-
 /* ===== Mobile layout ===== */
 .mobile-menu-btn{display:none;}
 
 @media (max-width: 860px){
-  html, body{overflow-x:hidden;}
-
   .mobile-menu-btn{
     display:flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:8px;
@@ -633,24 +626,9 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   }
   .sidebar-backdrop.open{display:block;}
 
-  .main-area{padding:52px 12px 24px;}
-
-  .sheet{grid-template-columns:1fr; row-gap:14px;}
-  .acc-tabs{grid-column:1;}
-  .block[data-block="funded"]{grid-column:1;}
-  .block[data-block="maand"]{grid-column:1;}
-  .block[data-block="totaal"]{grid-column:1;}
-  .screens-stack{grid-column:1; grid-row:auto;}
-  .block[data-block="trades"]{grid-column:1;}
+  .main-area{padding-top:52px;}
 
   .modal-box{width:calc(100vw - 40px); max-width:340px;}
-
-  .an-stats{grid-template-columns:repeat(2, 1fr);}
-  .an-charts{flex-direction:column;}
-}
-
-@media (max-width: 480px){
-  .an-stats{grid-template-columns:1fr 1fr;}
 }
 
 .login-overlay{
