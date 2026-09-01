@@ -1343,24 +1343,40 @@ function renderAccountTabs(){
   tab.accounts.forEach(acc=>{
     const item = document.createElement('div');
     item.className = 'acc-tab' + (acc.id === tab.activeAccountId ? ' active' : '');
-    item.onclick = ()=>{
-      if(tab.activeAccountId === acc.id) return;
-      tab.activeAccountId = acc.id;
-      saveState();
-      renderTradesWidget();
-      renderOverzichten();
-    };
 
     const nameEl = document.createElement('span');
     nameEl.className = 'acc-tab-name';
     nameEl.textContent = acc.name;
     nameEl.title = 'dubbelklik om te hernoemen';
-    nameEl.ondblclick = (e)=>{
-      e.stopPropagation();
+
+    const startRenameAcc = ()=>{
       nameEl.contentEditable = 'true';
       nameEl.focus();
       document.execCommand('selectAll', false, null);
     };
+
+    // Manual double-click detection: a re-render between clicks (from switching
+    // the active account) would otherwise break the browser's native dblclick.
+    let clickTimer = null;
+    item.onclick = (e)=>{
+      if(nameEl.contentEditable === 'true') return;
+      if(clickTimer){
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        startRenameAcc();
+        return;
+      }
+      clickTimer = setTimeout(()=>{
+        clickTimer = null;
+        if(tab.activeAccountId !== acc.id){
+          tab.activeAccountId = acc.id;
+          saveState();
+          renderTradesWidget();
+          renderOverzichten();
+        }
+      }, 250);
+    };
+
     nameEl.onclick = (e)=>{ if(nameEl.contentEditable === 'true') e.stopPropagation(); };
     nameEl.onblur = ()=>{
       nameEl.contentEditable = 'false';
