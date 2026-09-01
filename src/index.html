@@ -15,6 +15,7 @@
   --loss:#b02a2a;
   --accent:#1a73e8;
   --accent-soft:#eef4ff;
+  --mt5-warn:#b8720c;
 }
 :root[data-theme="dark"]{
   --bg:#1e1e1e;
@@ -30,6 +31,7 @@
   --loss:#ff6b6b;
   --accent:#5b9dff;
   --accent-soft:#28344a;
+  --mt5-warn:#e8a33d;
 }
 *{box-sizing:border-box;}
 html, body{min-height:100%;}
@@ -943,19 +945,25 @@ function openMt5Modal(acc){
     acc.mt5.login = loginEl.value.trim();
     acc.mt5.password = passEl.value;
     acc.mt5.server = serverEl.value.trim();
+    if(!acc.mt5.apiUrl) acc.mt5.status = 'none';
     saveState();
+    updateMt5SyncInfo();
   };
   cancelBtn.onclick = cleanup;
   saveOnlyBtn.onclick = ()=>{ readFields(); cleanup(); };
   saveSyncBtn.onclick = ()=>{
     readFields();
+    statusEl.style.color = '';
     statusEl.textContent = 'Bezig met synchroniseren...';
     syncMt5(acc).then(count=>{
+      statusEl.style.color = 'var(--win)';
       statusEl.textContent = `${count} trades opgehaald.`;
       renderTradesWidget();
       renderOverzichten();
     }).catch(err=>{
+      statusEl.style.color = acc.mt5.status === 'offline' ? 'var(--mt5-warn)' : 'var(--loss)';
       statusEl.textContent = 'Fout bij synchroniseren: ' + err.message;
+      updateMt5SyncInfo();
     });
   };
   modal.onclick = (e)=>{ if(e.target === modal) cleanup(); };
@@ -963,20 +971,37 @@ function openMt5Modal(acc){
 
 async function syncMt5(acc){
   if(!acc.mt5.apiUrl){
+    acc.mt5.status = 'none';
+    saveState();
     throw new Error('Geen API URL ingevuld');
   }
-  const res = await fetch(acc.mt5.apiUrl, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      login: acc.mt5.login,
-      password: acc.mt5.password,
-      server: acc.mt5.server
-    })
-  });
-  if(!res.ok) throw new Error('Server gaf status ' + res.status);
+  let res;
+  try{
+    res = await fetch(acc.mt5.apiUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        login: acc.mt5.login,
+        password: acc.mt5.password,
+        server: acc.mt5.server
+      })
+    });
+  }catch(networkErr){
+    acc.mt5.status = 'offline';
+    saveState();
+    throw new Error('Server niet bereikbaar (staat die aan?)');
+  }
+  if(!res.ok){
+    acc.mt5.status = res.status >= 500 ? 'offline' : 'error';
+    saveState();
+    throw new Error('Server gaf status ' + res.status);
+  }
   const data = await res.json();
-  if(!Array.isArray(data)) throw new Error('Onverwacht antwoord van server (geen lijst)');
+  if(!Array.isArray(data)){
+    acc.mt5.status = 'error';
+    saveState();
+    throw new Error('Onverwacht antwoord van server (geen lijst)');
+  }
 
   acc.trades = data.map(item=>{
     const datum = item.datum || item.date || '';
@@ -995,6 +1020,7 @@ async function syncMt5(acc){
     };
   });
   acc.mt5.lastSync = new Date().toLocaleString('nl-NL');
+  acc.mt5.status = 'connected';
   saveState();
   return acc.trades.length;
 }
@@ -1014,7 +1040,7 @@ function newAccountTrades(){
 }
 
 function newMt5Config(){
-  return { apiUrl:'', login:'', password:'', server:'', lastSync:null };
+  return { apiUrl:'', login:'', password:'', server:'', lastSync:null, status:'none' };
 }
 
 function newAccount(name){
@@ -1078,6 +1104,7 @@ function loadState(){
           }
           t.accounts.forEach(acc=>{
             if(!acc.mt5 || typeof acc.mt5 !== 'object') acc.mt5 = newMt5Config();
+            if(!acc.mt5.status) acc.mt5.status = 'none';
           });
         });
         return parsed;
@@ -1943,7 +1970,20 @@ function updateMt5SyncInfo(){
   const acc = activeAccount();
   const el = document.getElementById('mt5SyncInfo');
   if(!el) return;
-  el.textContent = acc.mt5 && acc.mt5.lastSync ? ('laatst gesynct: ' + acc.mt5.lastSync) : '';
+  const status = (acc.mt5 && acc.mt5.status) || 'none';
+  if(status === 'connected'){
+    el.textContent = 'MT5 gekoppeld' + (acc.mt5.lastSync ? (' — laatst gesynct: ' + acc.mt5.lastSync) : '');
+    el.style.color = 'var(--win)';
+  } else if(status === 'offline'){
+    el.textContent = 'MT5 server staat uit / niet bereikbaar';
+    el.style.color = 'var(--mt5-warn)';
+  } else if(status === 'error'){
+    el.textContent = 'MT5 koppeling geeft een fout';
+    el.style.color = 'var(--mt5-warn)';
+  } else {
+    el.textContent = 'MT5 niet gekoppeld';
+    el.style.color = 'var(--loss)';
+  }
 }
 
 renderAll();
