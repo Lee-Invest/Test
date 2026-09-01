@@ -698,15 +698,18 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 
 <div class="modal-overlay" id="mt5Modal" hidden>
   <div class="modal-box" style="max-width:340px;">
-    <div class="modal-msg">MetaTrader 5 koppelen aan dit account. Trades worden opgehaald via jouw eigen server/API.</div>
-    <label class="mt5-field-label">API URL (jouw server)</label>
-    <input type="text" class="modal-input" id="mt5ApiUrl" placeholder="https://jouw-server.nl/mt5/trades">
-    <label class="mt5-field-label">MT5 Login</label>
-    <input type="text" class="modal-input" id="mt5Login" placeholder="12345678">
-    <label class="mt5-field-label">MT5 Wachtwoord</label>
-    <input type="password" class="modal-input" id="mt5Password" placeholder="wachtwoord">
-    <label class="mt5-field-label">MT5 Server</label>
-    <input type="text" class="modal-input" id="mt5Server" placeholder="Broker-Server">
+    <div class="modal-msg">MetaTrader 5 koppelen aan dit account via een EA/bridge. De EA in MT5 stuurt trades naar jouw bridge-server; deze pagina haalt ze daar op. Geen MT5-inloggegevens nodig in de browser.</div>
+    <label class="mt5-field-label">API URL (jouw bridge-server)</label>
+    <input type="text" class="modal-input" id="mt5ApiUrl" placeholder="https://jouw-bridge.nl/trades">
+    <label class="mt5-field-label">Account key (zelfde als in de EA)</label>
+    <input type="text" class="modal-input" id="mt5AccountKey" placeholder="bv. main-ftmo-200k">
+    <label class="mt5-field-label">Automatisch synchroniseren</label>
+    <select class="modal-input" id="mt5AutoSync">
+      <option value="0">Uit — alleen handmatig</option>
+      <option value="30">Elke 30 seconden</option>
+      <option value="60">Elke minuut</option>
+      <option value="300">Elke 5 minuten</option>
+    </select>
     <div class="modal-msg" id="mt5Status" style="margin-bottom:10px; margin-top:-8px;"></div>
     <div class="modal-actions">
       <button type="button" id="mt5Cancel">Annuleren</button>
@@ -945,18 +948,17 @@ function showAlert(message){
 function openMt5Modal(acc){
   const modal = document.getElementById('mt5Modal');
   const apiUrlEl = document.getElementById('mt5ApiUrl');
-  const loginEl = document.getElementById('mt5Login');
-  const passEl = document.getElementById('mt5Password');
-  const serverEl = document.getElementById('mt5Server');
+  const keyEl = document.getElementById('mt5AccountKey');
+  const autoEl = document.getElementById('mt5AutoSync');
   const statusEl = document.getElementById('mt5Status');
   const cancelBtn = document.getElementById('mt5Cancel');
   const saveOnlyBtn = document.getElementById('mt5SaveOnly');
   const saveSyncBtn = document.getElementById('mt5SaveSync');
 
   apiUrlEl.value = acc.mt5.apiUrl || '';
-  loginEl.value = acc.mt5.login || '';
-  passEl.value = acc.mt5.password || '';
-  serverEl.value = acc.mt5.server || '';
+  keyEl.value = acc.mt5.accountKey || '';
+  autoEl.value = String(acc.mt5.autoSyncSeconds || 0);
+  statusEl.style.color = '';
   statusEl.textContent = acc.mt5.lastSync ? ('Laatst gesynchroniseerd: ' + acc.mt5.lastSync) : '';
   modal.hidden = false;
 
@@ -969,12 +971,12 @@ function openMt5Modal(acc){
   };
   const readFields = ()=>{
     acc.mt5.apiUrl = apiUrlEl.value.trim();
-    acc.mt5.login = loginEl.value.trim();
-    acc.mt5.password = passEl.value;
-    acc.mt5.server = serverEl.value.trim();
+    acc.mt5.accountKey = keyEl.value.trim();
+    acc.mt5.autoSyncSeconds = parseInt(autoEl.value, 10) || 0;
     if(!acc.mt5.apiUrl) acc.mt5.status = 'none';
     saveState();
     updateMt5SyncInfo();
+    setupMt5AutoSync(acc);
   };
   cancelBtn.onclick = cleanup;
   saveOnlyBtn.onclick = ()=>{ readFields(); cleanup(); };
@@ -1002,21 +1004,17 @@ async function syncMt5(acc){
     saveState();
     throw new Error('Geen API URL ingevuld');
   }
+  let url = acc.mt5.apiUrl;
+  if(acc.mt5.accountKey){
+    url += (url.includes('?') ? '&' : '?') + 'account=' + encodeURIComponent(acc.mt5.accountKey);
+  }
   let res;
   try{
-    res = await fetch(acc.mt5.apiUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        login: acc.mt5.login,
-        password: acc.mt5.password,
-        server: acc.mt5.server
-      })
-    });
+    res = await fetch(url, { method: 'GET' });
   }catch(networkErr){
     acc.mt5.status = 'offline';
     saveState();
-    throw new Error('Server niet bereikbaar (staat die aan?)');
+    throw new Error('Bridge-server niet bereikbaar (staat die aan?)');
   }
   if(!res.ok){
     acc.mt5.status = res.status >= 500 ? 'offline' : 'error';
@@ -1052,6 +1050,32 @@ async function syncMt5(acc){
   return acc.trades.length;
 }
 
+const mt5AutoTimers = {};
+function setupMt5AutoSync(acc){
+  if(mt5AutoTimers[acc.id]){
+    clearInterval(mt5AutoTimers[acc.id]);
+    delete mt5AutoTimers[acc.id];
+  }
+  const seconds = acc.mt5.autoSyncSeconds || 0;
+  if(!seconds || !acc.mt5.apiUrl) return;
+  mt5AutoTimers[acc.id] = setInterval(()=>{
+    syncMt5(acc).then(()=>{
+      if(activeAccount().id === acc.id){
+        renderTradesWidget();
+        renderOverzichten();
+      } else {
+        updateMt5SyncInfo();
+      }
+    }).catch(()=>{ updateMt5SyncInfo(); });
+  }, seconds * 1000);
+}
+
+function setupAllMt5AutoSync(){
+  state.tabs.forEach(t=> t.accounts.forEach(acc=>{
+    if(acc.mt5 && acc.mt5.autoSyncSeconds) setupMt5AutoSync(acc);
+  }));
+}
+
 function defaultInfo(){
   return {
     l1:'Trade kapitaal: € 10.000', l2:'Max Risico altijd: 1%', l3:'Max Daily drawdown: 5%',
@@ -1067,7 +1091,7 @@ function newAccountTrades(){
 }
 
 function newMt5Config(){
-  return { apiUrl:'', login:'', password:'', server:'', lastSync:null, status:'none' };
+  return { apiUrl:'', accountKey:'', autoSyncSeconds:0, lastSync:null, status:'none' };
 }
 
 function newAccount(name){
@@ -1132,6 +1156,11 @@ function loadState(){
           t.accounts.forEach(acc=>{
             if(!acc.mt5 || typeof acc.mt5 !== 'object') acc.mt5 = newMt5Config();
             if(!acc.mt5.status) acc.mt5.status = 'none';
+            if(acc.mt5.accountKey === undefined) acc.mt5.accountKey = '';
+            if(acc.mt5.autoSyncSeconds === undefined) acc.mt5.autoSyncSeconds = 0;
+            delete acc.mt5.login;
+            delete acc.mt5.password;
+            delete acc.mt5.server;
           });
         });
         return parsed;
@@ -2074,4 +2103,5 @@ function updateMt5SyncInfo(){
 }
 
 renderAll();
+setupAllMt5AutoSync();
 </script>
