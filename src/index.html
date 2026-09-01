@@ -197,6 +197,58 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .info-box{font-size:12px; line-height:1.5; color:var(--text);}
 .info-box b{font-weight:bold;}
 .trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
+
+.acc-tabs{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  border:1px solid var(--border-strong);
+  background:var(--surface-2);
+  border-radius:9px;
+  padding:3px;
+  margin-bottom:4px;
+  width:max-content;
+  max-width:100%;
+  overflow-x:auto;
+}
+.acc-tab{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--text-dim);
+  cursor:pointer;
+  white-space:nowrap;
+  user-select:none;
+}
+.acc-tab:hover{color:var(--text);}
+.acc-tab.active{
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:0 1px 2px rgba(0,0,0,0.08);
+}
+.acc-tab .acc-tab-name{outline:none; border-radius:4px;}
+.acc-tab .acc-tab-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft); padding:0 3px; cursor:text;}
+.acc-tab .acc-tab-del{
+  font-size:10px; color:var(--text-dim); opacity:0; line-height:1;
+  border-radius:4px; padding:1px 3px;
+}
+.acc-tab:hover .acc-tab-del{opacity:1;}
+.acc-tab .acc-tab-del:hover{color:var(--loss); background:var(--loss-bg);}
+.acc-tab-add{
+  display:flex; align-items:center; justify-content:center;
+  width:26px; height:26px;
+  border-radius:6px;
+  color:var(--text-dim);
+  cursor:pointer;
+  font-size:15px;
+  font-weight:600;
+}
+.acc-tab-add:hover{background:var(--surface); color:var(--accent);}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 
 /* Standalone Trades 2 widget — no <table>, no shared classes, fully self-contained */
@@ -648,6 +700,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 
   <!-- Block: Trades table (fully standalone widget) -->
   <div class="block" data-block="trades">
+    <div class="acc-tabs" id="accTabs"></div>
     <div class="trades-title">Trades 2</div>
     <div class="tt" id="tt">
       <div class="tt-head" id="ttHead"></div>
@@ -824,12 +877,22 @@ function defaultInfo(){
   };
 }
 
+function newAccountTrades(){
+  return Array.from({length: 24}, ()=> ({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''}));
+}
+
+function newAccount(name){
+  return { id: uid(), name: name || 'Nieuw account', trades: newAccountTrades() };
+}
+
 function newTab(name){
+  const acc = newAccount('Main');
   return {
     id: uid(),
     name: name || 'Nieuwe maand',
     info: defaultInfo(),
-    trades: Array.from({length: 24}, ()=> ({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''})),
+    accounts: [acc],
+    activeAccountId: acc.id,
     screens:[
       {id:uid(), num:1, text:'', img1:null, img2:null},
       {id:uid(), num:2, text:'', img1:null, img2:null},
@@ -867,6 +930,17 @@ function loadState(){
         if(!Array.isArray(parsed.extraColumns)) parsed.extraColumns = [];
         if(!parsed.colWidths || typeof parsed.colWidths !== 'object') parsed.colWidths = {};
         if(!Array.isArray(parsed.hiddenBaseColumns)) parsed.hiddenBaseColumns = [];
+        parsed.tabs.forEach(t=>{
+          if(!Array.isArray(t.accounts) || !t.accounts.length){
+            const acc = newAccount('Main');
+            if(Array.isArray(t.trades)) acc.trades = t.trades;
+            t.accounts = [acc];
+            delete t.trades;
+          }
+          if(!t.activeAccountId || !t.accounts.find(a=>a.id===t.activeAccountId)){
+            t.activeAccountId = t.accounts[0].id;
+          }
+        });
         return parsed;
       }
     }
@@ -878,6 +952,11 @@ let state = loadState();
 
 function activeTab(){
   return state.tabs.find(t=>t.id === state.activeTabId) || state.tabs[0];
+}
+
+function activeAccount(){
+  const tab = activeTab();
+  return tab.accounts.find(a=>a.id === tab.activeAccountId) || tab.accounts[0];
 }
 
 function saveState(){
@@ -1148,7 +1227,7 @@ function buildTTHeaderCell(col){
         state.hiddenBaseColumns.push(col.key);
       } else {
         state.extraColumns = state.extraColumns.filter(c=>c.id !== col.key);
-        state.tabs.forEach(t=> t.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.key]; }));
+        state.tabs.forEach(t=> t.accounts.forEach(acc=> acc.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.key]; })));
         delete state.colWidths[col.key];
       }
       saveState();
@@ -1179,7 +1258,7 @@ function renderTTHead(){
     showPrompt('Naam van de nieuwe kolom:', 'Kolom ' + (state.extraColumns.length + 1), (name)=>{
       const col = {id: uid(), name: (name || '').trim() || 'Kolom'};
       state.extraColumns.push(col);
-      state.tabs.forEach(t=> t.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; }));
+      state.tabs.forEach(t=> t.accounts.forEach(acc=> acc.trades.forEach(tr=>{ tr.extra = tr.extra || {}; tr.extra[col.id] = ''; })));
       saveState();
       renderTradesWidget();
     });
@@ -1188,12 +1267,12 @@ function renderTTHead(){
 }
 
 function renderTTRows(){
-  const tab = activeTab();
+  const acc = activeAccount();
   const rowsEl = document.getElementById('ttRows');
   rowsEl.innerHTML = '';
   const cols = ttColumns();
 
-  tab.trades.forEach(trade=>{
+  acc.trades.forEach(trade=>{
     if(!trade.extra) trade.extra = {};
     const wv = trade.wv !== null && trade.wv !== undefined ? trade.wv : computeWV(trade.resultaat);
     trade.wv = wv;
@@ -1250,7 +1329,7 @@ function renderTTRows(){
     delBtn.title = 'verwijder';
     delBtn.textContent = '✕';
     delBtn.onclick = ()=>{
-      tab.trades = tab.trades.filter(t=>t.id !== trade.id);
+      acc.trades = acc.trades.filter(t=>t.id !== trade.id);
       saveState();
       renderTradesWidget();
       renderOverzichten();
@@ -1261,7 +1340,91 @@ function renderTTRows(){
   });
 }
 
+function renderAccountTabs(){
+  const wrap = document.getElementById('accTabs');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  const tab = activeTab();
+
+  tab.accounts.forEach(acc=>{
+    const item = document.createElement('div');
+    item.className = 'acc-tab' + (acc.id === tab.activeAccountId ? ' active' : '');
+    item.onclick = ()=>{
+      if(tab.activeAccountId === acc.id) return;
+      tab.activeAccountId = acc.id;
+      saveState();
+      renderTradesWidget();
+      renderOverzichten();
+    };
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'acc-tab-name';
+    nameEl.textContent = acc.name;
+    nameEl.title = 'dubbelklik om te hernoemen';
+    nameEl.ondblclick = (e)=>{
+      e.stopPropagation();
+      nameEl.contentEditable = 'true';
+      nameEl.focus();
+      document.execCommand('selectAll', false, null);
+    };
+    nameEl.onclick = (e)=>{ if(nameEl.contentEditable === 'true') e.stopPropagation(); };
+    nameEl.onblur = ()=>{
+      nameEl.contentEditable = 'false';
+      acc.name = nameEl.textContent.trim() || 'Account';
+      saveState();
+      renderAccountTabs();
+    };
+    nameEl.onkeydown = (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); nameEl.blur(); }
+      if(e.key === 'Escape'){ e.preventDefault(); nameEl.textContent = acc.name; nameEl.blur(); }
+    };
+    item.appendChild(nameEl);
+
+    const delBtn = document.createElement('span');
+    delBtn.className = 'acc-tab-del';
+    delBtn.textContent = '✕';
+    delBtn.title = 'account verwijderen';
+    delBtn.onclick = (e)=>{
+      e.stopPropagation();
+      if(tab.accounts.length <= 1) return;
+      showConfirm(`Account "${acc.name}" verwijderen? Alle trades van dit account gaan verloren.`, ()=>{
+        const idx = tab.accounts.findIndex(a=>a.id===acc.id);
+        tab.accounts = tab.accounts.filter(a=>a.id !== acc.id);
+        if(tab.activeAccountId === acc.id){
+          tab.activeAccountId = tab.accounts[Math.max(0, idx-1)].id;
+        }
+        saveState();
+        renderAccountTabs();
+        renderTradesWidget();
+        renderOverzichten();
+      });
+    };
+    if(tab.accounts.length > 1) item.appendChild(delBtn);
+
+    wrap.appendChild(item);
+  });
+
+  const addBtn = document.createElement('div');
+  addBtn.className = 'acc-tab-add';
+  addBtn.textContent = '+';
+  addBtn.title = 'nieuw account toevoegen';
+  addBtn.onclick = (e)=>{
+    e.stopPropagation();
+    showPrompt('Naam voor nieuw account:', 'Nieuw account', (name)=>{
+      const acc = newAccount(name);
+      tab.accounts.push(acc);
+      tab.activeAccountId = acc.id;
+      saveState();
+      renderAccountTabs();
+      renderTradesWidget();
+      renderOverzichten();
+    });
+  };
+  wrap.appendChild(addBtn);
+}
+
 function renderTradesWidget(){
+  renderAccountTabs();
   renderTTHead();
   renderTTRows();
 }
@@ -1276,7 +1439,7 @@ function overzichtRow(label, valueHtml, suffix){
 
 function renderOverzichten(){
   const tab = activeTab();
-  const trades = tab.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const trades = activeAccount().trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
   const totalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
   const gewonnen = trades.filter(t=> t.wv === 1).length;
   const verloren = trades.filter(t=> t.wv === 0).length;
@@ -1378,8 +1541,7 @@ function renderAnalytics(){
   const statsEl = document.getElementById('anStats');
   if(!statsEl) return;
 
-  const tab = activeTab();
-  const trades = tab.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const trades = activeAccount().trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
   const values = trades.map(t=> parseAmount(t.resultaat));
   const wins = values.filter(v=> v>0);
   const losses = values.filter(v=> v<0);
@@ -1611,7 +1773,7 @@ function renderScreens(){
 }
 
 document.getElementById('addRow').onclick = ()=>{
-  activeTab().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
+  activeAccount().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
   saveState();
   renderRows();
   renderOverzichten();
