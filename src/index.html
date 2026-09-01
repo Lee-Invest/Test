@@ -199,6 +199,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
 
 .acc-tabs{
+  grid-column:1 / -1;
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -207,7 +208,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   background:var(--surface-2);
   border-radius:9px;
   padding:3px;
-  margin-bottom:4px;
   width:100%;
 }
 .acc-tab{
@@ -445,18 +445,17 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   display:grid;
   grid-template-columns:280px minmax(0, 1fr);
   column-gap:24px;
+  row-gap:16px;
   align-items:start;
 }
 .block{position:relative; padding-top:6px; min-width:0;}
-.block-stack{display:flex; flex-direction:column; gap:16px; min-width:0;}
-.block-stack{grid-column:1; position:relative; z-index:2; isolation:isolate;}
-.block[data-block="trades"]{position:relative; z-index:2;}
-.right-stack{grid-column:2; display:flex; flex-direction:column; gap:14px; min-width:0; position:relative; z-index:3;}
-.right-row{display:flex; gap:24px; align-items:start;}
+.block[data-block="funded"]{grid-column:1;}
+.block[data-block="trades"]{grid-column:1; position:relative; z-index:2;}
+.right-row{grid-column:2; display:flex; gap:24px; align-items:start; min-width:0;}
 .block[data-block="maand"]{flex:0 0 220px;}
 .block[data-block="totaal"]{flex:0 0 220px;}
-.screens-stack{flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:14px;}
-.block[data-block="screens"]{min-width:0;}
+.block[data-block="screens"]{flex:1 1 380px; min-width:0;}
+.an-dashboard{grid-column:2; min-width:0;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -678,7 +677,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 <div class="main-area">
 <div id="rowsContainer">
 <div class="sheet" id="sheet">
-  <div class="block-stack" id="stackFundedTrades">
   <!-- Block: Funded account info -->
   <div class="block" data-block="funded">
     <h2 class="title">Funded account</h2>
@@ -697,9 +695,33 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
     </div>
   </div>
 
+  <div class="right-row">
+    <!-- Block: Overzicht Maand -->
+    <div class="block" data-block="maand">
+      <h2 class="title">Overzicht Maand;</h2>
+      <div class="overzicht-box" id="maandBox"></div>
+    </div>
+
+    <!-- Block: Totaal overzicht -->
+    <div class="block" data-block="totaal">
+      <h2 class="title">Totaal overzicht;</h2>
+      <div class="overzicht-box" id="totaalBox"></div>
+    </div>
+
+    <!-- Block: screenshots -->
+    <div class="block" data-block="screens">
+      <div class="screens-title">Trades screenshots and explain</div>
+      <div class="table-scroll">
+        <div class="screens-grid" id="screensGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account tab bar: spans the full sheet width, sits right above Trades 2 / Dashboard -->
+  <div class="acc-tabs" id="accTabs"></div>
+
   <!-- Block: Trades table (fully standalone widget) -->
   <div class="block" data-block="trades">
-    <div class="acc-tabs" id="accTabs"></div>
     <div class="trades-title">Trades 2</div>
     <div class="tt" id="tt">
       <div class="tt-head" id="ttHead"></div>
@@ -707,57 +729,28 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
     </div>
     <button class="small-add" id="addRow" type="button">+ trade</button>
   </div>
-  </div>
 
-  <!-- Right-side column group: Overzicht/Totaal/Screenshots row + dashboard below, independent of Trades 2's height -->
-  <div class="right-stack">
-    <div class="right-row">
-      <!-- Block: Overzicht Maand -->
-      <div class="block" data-block="maand">
-        <h2 class="title">Overzicht Maand;</h2>
-        <div class="overzicht-box" id="maandBox"></div>
-      </div>
-
-      <!-- Block: Totaal overzicht -->
-      <div class="block" data-block="totaal">
-        <h2 class="title">Totaal overzicht;</h2>
-        <div class="overzicht-box" id="totaalBox"></div>
-      </div>
-
-      <!-- Screenshots + dashboard share exactly the same width -->
-      <div class="screens-stack">
-        <!-- Block: screenshots -->
-        <div class="block" data-block="screens">
-          <div class="screens-title">Trades screenshots and explain</div>
-          <div class="table-scroll">
-            <div class="screens-grid" id="screensGrid"></div>
-          </div>
+  <!-- Analytics dashboard: same width as Screenshots, directly below it -->
+  <div class="an-dashboard">
+    <div class="an-stats" id="anStats"></div>
+    <div class="an-charts">
+      <div class="an-card an-equity-card">
+        <div class="an-card-head">
+          <span>Equity Curve</span>
+          <span class="an-pill">Maand</span>
         </div>
-
-        <!-- Analytics dashboard: same width as Screenshots, directly below it -->
-        <div class="an-dashboard">
-          <div class="an-stats" id="anStats"></div>
-          <div class="an-charts">
-            <div class="an-card an-equity-card">
-              <div class="an-card-head">
-                <span>Equity Curve</span>
-                <span class="an-pill">Maand</span>
-              </div>
-              <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
-            </div>
-            <div class="an-card an-donut-card">
-              <div class="an-card-head"><span>Winst / Verlies</span></div>
-              <div class="an-donut-wrap">
-                <svg id="anDonut" viewBox="0 0 120 120"></svg>
-                <div class="an-donut-legend" id="anDonutLegend"></div>
-              </div>
-            </div>
-            <div class="an-card an-bars-card">
-              <div class="an-card-head"><span>Winst per dag</span></div>
-              <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
-            </div>
-          </div>
+        <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="an-card an-donut-card">
+        <div class="an-card-head"><span>Winst / Verlies</span></div>
+        <div class="an-donut-wrap">
+          <svg id="anDonut" viewBox="0 0 120 120"></svg>
+          <div class="an-donut-legend" id="anDonutLegend"></div>
         </div>
+      </div>
+      <div class="an-card an-bars-card">
+        <div class="an-card-head"><span>Winst per dag</span></div>
+        <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
       </div>
     </div>
   </div>
