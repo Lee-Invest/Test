@@ -189,6 +189,29 @@ body{
 }
 .theme-toggle button.active{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,0.08);}
 
+.undo-redo{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:2px;
+  flex:0 0 auto;
+}
+.undo-redo button{
+  border:none;
+  background:transparent;
+  color:var(--text-dim);
+  width:26px; height:24px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+}
+.undo-redo button:hover:not(:disabled){background:var(--hover); color:var(--text);}
+.undo-redo button:disabled{opacity:0.35; cursor:default;}
+
 .main-area{
   flex:1;
   min-width:0;
@@ -709,6 +732,10 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
         <div class="name">Trade Journal</div>
         <div class="plan" id="lastSaved">nog niet opgeslagen</div>
       </div>
+      <div class="undo-redo" id="undoRedo">
+        <button type="button" id="undoBtn" title="Ongedaan maken" disabled>↶</button>
+        <button type="button" id="redoBtn" title="Opnieuw" disabled>↷</button>
+      </div>
       <div class="theme-toggle" id="themeToggle">
         <button type="button" data-theme-choice="light" title="Licht">☀</button>
         <button type="button" data-theme-choice="dark" title="Donker">☾</button>
@@ -1125,12 +1152,64 @@ function activeAccount(){
   return tab.accounts.find(a=>a.id === tab.activeAccountId) || tab.accounts[0];
 }
 
+const UNDO_LIMIT = 50;
+let undoStack = [];
+let redoStack = [];
+let historySuspended = false;
+
 function saveState(){
   try{
+    if(!historySuspended){
+      const prevRaw = localStorage.getItem(STORAGE_KEY);
+      if(prevRaw !== null){
+        undoStack.push(prevRaw);
+        if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+        redoStack = [];
+      }
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     const el = document.getElementById('lastSaved');
     el.textContent = 'opgeslagen ' + new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    updateUndoRedoButtons();
   }catch(e){}
+}
+
+function applyHistorySnapshot(raw){
+  try{
+    state = JSON.parse(raw);
+  }catch(e){ return; }
+  historySuspended = true;
+  try{
+    localStorage.setItem(STORAGE_KEY, raw);
+    if(!state.tabs.find(t=>t.id===state.activeTabId)) state.activeTabId = state.tabs[0].id;
+    renderAll();
+  }finally{
+    historySuspended = false;
+  }
+  updateUndoRedoButtons();
+}
+
+function undoState(){
+  if(!undoStack.length) return;
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  const prevRaw = undoStack.pop();
+  if(currentRaw !== null) redoStack.push(currentRaw);
+  applyHistorySnapshot(prevRaw);
+}
+
+function redoState(){
+  if(!redoStack.length) return;
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  const nextRaw = redoStack.pop();
+  if(currentRaw !== null) undoStack.push(currentRaw);
+  applyHistorySnapshot(nextRaw);
+}
+
+function updateUndoRedoButtons(){
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if(undoBtn) undoBtn.disabled = undoStack.length === 0;
+  if(redoBtn) redoBtn.disabled = redoStack.length === 0;
 }
 
 function renderAll(){
@@ -1965,6 +2044,15 @@ document.getElementById('addRow').onclick = ()=>{
 document.getElementById('mt5Btn').onclick = ()=>{
   openMt5Modal(activeAccount());
 };
+
+document.getElementById('undoBtn').onclick = undoState;
+document.getElementById('redoBtn').onclick = redoState;
+document.addEventListener('keydown', (e)=>{
+  if(!(e.ctrlKey || e.metaKey)) return;
+  const key = e.key.toLowerCase();
+  if(key === 'z' && !e.shiftKey){ e.preventDefault(); undoState(); }
+  else if((key === 'z' && e.shiftKey) || key === 'y'){ e.preventDefault(); redoState(); }
+});
 
 function updateMt5SyncInfo(){
   const acc = activeAccount();
