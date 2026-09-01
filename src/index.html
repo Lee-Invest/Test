@@ -199,6 +199,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
 
 .acc-tabs{
+  grid-column:1 / -1;
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -207,7 +208,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   background:var(--surface-2);
   border-radius:9px;
   padding:3px;
-  margin-bottom:4px;
+  margin-bottom:2px;
   width:100%;
 }
 .acc-tab{
@@ -678,6 +679,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 <div class="main-area">
 <div id="rowsContainer">
 <div class="sheet" id="sheet">
+  <div class="acc-tabs" id="accTabs"></div>
   <div class="block-stack" id="stackFundedTrades">
   <!-- Block: Funded account info -->
   <div class="block" data-block="funded">
@@ -699,7 +701,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 
   <!-- Block: Trades table (fully standalone widget) -->
   <div class="block" data-block="trades">
-    <div class="acc-tabs" id="accTabs"></div>
     <div class="trades-title">Trades 2</div>
     <div class="tt" id="tt">
       <div class="tt-head" id="ttHead"></div>
