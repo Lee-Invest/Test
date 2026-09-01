@@ -506,9 +506,9 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .modal-actions button.danger:hover{filter:brightness(1.08);}
 .mt5-field-label{display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;}
 .mt5-btn{
-  font-family:Arial, Helvetica, sans-serif; font-size:11px; font-weight:600;
+  font-family:Arial, Helvetica, sans-serif; font-size:11px; font-weight:normal;
   padding:3px 8px; border-radius:5px; border:1px solid var(--border-strong);
-  background:var(--surface-2); color:var(--text); cursor:pointer;
+  background:var(--surface-2); cursor:pointer;
   margin-top:6px; margin-left:6px; vertical-align:top;
 }
 .mt5-btn:hover{background:var(--hover);}
@@ -1968,21 +1968,20 @@ document.getElementById('mt5Btn').onclick = ()=>{
 
 function updateMt5SyncInfo(){
   const acc = activeAccount();
-  const el = document.getElementById('mt5SyncInfo');
-  if(!el) return;
+  const btn = document.getElementById('mt5Btn');
+  const infoEl = document.getElementById('mt5SyncInfo');
+  if(!btn) return;
+  if(infoEl) infoEl.textContent = '';
   const status = (acc.mt5 && acc.mt5.status) || 'none';
   if(status === 'connected'){
-    el.textContent = 'MT5 gekoppeld' + (acc.mt5.lastSync ? (' — laatst gesynct: ' + acc.mt5.lastSync) : '');
-    el.style.color = 'var(--win)';
-  } else if(status === 'offline'){
-    el.textContent = 'MT5 server staat uit / niet bereikbaar';
-    el.style.color = 'var(--mt5-warn)';
-  } else if(status === 'error'){
-    el.textContent = 'MT5 koppeling geeft een fout';
-    el.style.color = 'var(--mt5-warn)';
+    btn.style.color = 'var(--win)';
+    btn.title = acc.mt5.lastSync ? ('laatst gesynct: ' + acc.mt5.lastSync) : '';
+  } else if(status === 'offline' || status === 'error'){
+    btn.style.color = 'var(--mt5-warn)';
+    btn.title = status === 'offline' ? 'server niet bereikbaar' : 'koppeling geeft een fout';
   } else {
-    el.textContent = 'MT5 niet gekoppeld';
-    el.style.color = 'var(--loss)';
+    btn.style.color = 'var(--loss)';
+    btn.title = 'nog niet gekoppeld';
   }
 }
 
