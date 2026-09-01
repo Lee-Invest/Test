@@ -645,6 +645,15 @@ html.is-mobile .main-area{padding-top:52px; padding-bottom:450px;}
 
 html.is-mobile .modal-box{width:340px; max-width:340px;}
 
+/* iOS/Android auto-zoom into any input focused with font-size below 16px —
+   force 16px on focus only, so the layout doesn't visibly change otherwise. */
+html.is-mobile input:focus,
+html.is-mobile select:focus,
+html.is-mobile textarea:focus,
+html.is-mobile [contenteditable="true"]:focus{
+  font-size:16px !important;
+}
+
 .login-overlay{
   position:fixed; inset:0; z-index:1000;
   display:flex; align-items:center; justify-content:center;
