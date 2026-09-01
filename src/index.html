@@ -201,6 +201,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .acc-tabs{
   display:flex;
   align-items:center;
+  flex-wrap:wrap;
   gap:2px;
   border:1px solid var(--border-strong);
   background:var(--surface-2);
@@ -209,7 +210,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   margin-bottom:4px;
   width:max-content;
   max-width:100%;
-  overflow-x:auto;
 }
 .acc-tab{
   position:relative;
@@ -241,11 +241,11 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .acc-tab .acc-tab-del:hover{color:var(--loss); background:var(--loss-bg);}
 .acc-tab-add{
   display:flex; align-items:center; justify-content:center;
-  width:26px; height:26px;
-  border-radius:6px;
+  width:20px; height:20px;
+  border-radius:5px;
   color:var(--text-dim);
   cursor:pointer;
-  font-size:15px;
+  font-size:12px;
   font-weight:600;
 }
 .acc-tab-add:hover{background:var(--surface); color:var(--accent);}
