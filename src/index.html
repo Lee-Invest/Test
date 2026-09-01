@@ -454,8 +454,8 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .block[data-block="trades"]{grid-column:1; position:relative; z-index:2;}
 .block[data-block="maand"]{grid-column:2;}
 .block[data-block="totaal"]{grid-column:3;}
-.block[data-block="screens"]{grid-column:4; min-width:0;}
-.an-dashboard{grid-column:4; min-width:0;}
+.screens-stack{grid-column:4; grid-row:1 / 4; min-width:0; display:flex; flex-direction:column; gap:14px;}
+.block[data-block="screens"]{min-width:0;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -707,15 +707,43 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
     <div class="overzicht-box" id="totaalBox"></div>
   </div>
 
-  <!-- Block: screenshots -->
-  <div class="block" data-block="screens">
-    <div class="screens-title">Trades screenshots and explain</div>
-    <div class="table-scroll">
-      <div class="screens-grid" id="screensGrid"></div>
+  <!-- Screenshots + dashboard: independent height, own grid track spanning all rows -->
+  <div class="screens-stack">
+    <!-- Block: screenshots -->
+    <div class="block" data-block="screens">
+      <div class="screens-title">Trades screenshots and explain</div>
+      <div class="table-scroll">
+        <div class="screens-grid" id="screensGrid"></div>
+      </div>
+    </div>
+
+    <!-- Analytics dashboard: same width as Screenshots, directly below it -->
+    <div class="an-dashboard">
+      <div class="an-stats" id="anStats"></div>
+      <div class="an-charts">
+        <div class="an-card an-equity-card">
+          <div class="an-card-head">
+            <span>Equity Curve</span>
+            <span class="an-pill">Maand</span>
+          </div>
+          <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="an-card an-donut-card">
+          <div class="an-card-head"><span>Winst / Verlies</span></div>
+          <div class="an-donut-wrap">
+            <svg id="anDonut" viewBox="0 0 120 120"></svg>
+            <div class="an-donut-legend" id="anDonutLegend"></div>
+          </div>
+        </div>
+        <div class="an-card an-bars-card">
+          <div class="an-card-head"><span>Winst per dag</span></div>
+          <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Account tab bar: spans the full sheet width, sits right above Trades 2 / Dashboard -->
+  <!-- Account tab bar: spans the full sheet width, sits right above Trades 2 -->
   <div class="acc-tabs" id="accTabs"></div>
 
   <!-- Block: Trades table (fully standalone widget) -->
@@ -726,31 +754,6 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
       <div class="tt-rows" id="ttRows"></div>
     </div>
     <button class="small-add" id="addRow" type="button">+ trade</button>
-  </div>
-
-  <!-- Analytics dashboard: same width as Screenshots, directly below it -->
-  <div class="an-dashboard">
-    <div class="an-stats" id="anStats"></div>
-    <div class="an-charts">
-      <div class="an-card an-equity-card">
-        <div class="an-card-head">
-          <span>Equity Curve</span>
-          <span class="an-pill">Maand</span>
-        </div>
-        <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="an-card an-donut-card">
-        <div class="an-card-head"><span>Winst / Verlies</span></div>
-        <div class="an-donut-wrap">
-          <svg id="anDonut" viewBox="0 0 120 120"></svg>
-          <div class="an-donut-legend" id="anDonutLegend"></div>
-        </div>
-      </div>
-      <div class="an-card an-bars-card">
-        <div class="an-card-head"><span>Winst per dag</span></div>
-        <svg id="anBars" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
-      </div>
-    </div>
   </div>
 </div>
 
