@@ -199,7 +199,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .trades-title{font-weight:bold; margin:14px 0 6px 0; color:var(--text);}
 
 .acc-tabs{
-  grid-column:1 / -1;
+  grid-column:1 / 4;
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -443,7 +443,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 #rowsContainer{display:flex; flex-direction:column; gap:24px;}
 .sheet{
   display:grid;
-  grid-template-columns:280px minmax(0, 1fr);
+  grid-template-columns:280px 220px 220px minmax(0, 1fr);
   column-gap:24px;
   row-gap:16px;
   align-items:start;
@@ -451,11 +451,10 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .block{position:relative; padding-top:6px; min-width:0;}
 .block[data-block="funded"]{grid-column:1;}
 .block[data-block="trades"]{grid-column:1; position:relative; z-index:2;}
-.right-row{grid-column:2; display:flex; gap:24px; align-items:start; min-width:0;}
-.block[data-block="maand"]{flex:0 0 220px;}
-.block[data-block="totaal"]{flex:0 0 220px;}
-.block[data-block="screens"]{flex:1 1 380px; min-width:0;}
-.an-dashboard{grid-column:2; min-width:0;}
+.block[data-block="maand"]{grid-column:2;}
+.block[data-block="totaal"]{grid-column:3;}
+.block[data-block="screens"]{grid-column:4; min-width:0;}
+.an-dashboard{grid-column:4; min-width:0;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -695,25 +694,23 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
     </div>
   </div>
 
-  <div class="right-row">
-    <!-- Block: Overzicht Maand -->
-    <div class="block" data-block="maand">
-      <h2 class="title">Overzicht Maand;</h2>
-      <div class="overzicht-box" id="maandBox"></div>
-    </div>
+  <!-- Block: Overzicht Maand -->
+  <div class="block" data-block="maand">
+    <h2 class="title">Overzicht Maand;</h2>
+    <div class="overzicht-box" id="maandBox"></div>
+  </div>
 
-    <!-- Block: Totaal overzicht -->
-    <div class="block" data-block="totaal">
-      <h2 class="title">Totaal overzicht;</h2>
-      <div class="overzicht-box" id="totaalBox"></div>
-    </div>
+  <!-- Block: Totaal overzicht -->
+  <div class="block" data-block="totaal">
+    <h2 class="title">Totaal overzicht;</h2>
+    <div class="overzicht-box" id="totaalBox"></div>
+  </div>
 
-    <!-- Block: screenshots -->
-    <div class="block" data-block="screens">
-      <div class="screens-title">Trades screenshots and explain</div>
-      <div class="table-scroll">
-        <div class="screens-grid" id="screensGrid"></div>
-      </div>
+  <!-- Block: screenshots -->
+  <div class="block" data-block="screens">
+    <div class="screens-title">Trades screenshots and explain</div>
+    <div class="table-scroll">
+      <div class="screens-grid" id="screensGrid"></div>
     </div>
   </div>
 
