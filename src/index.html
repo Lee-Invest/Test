@@ -1,6 +1,19 @@
 <title>Trade Journal</title>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  // Detect the real device width before anything switches the viewport meta.
+  if(window.innerWidth <= 860){
+    document.documentElement.classList.add('is-mobile');
+    // Give the fixed-pixel desktop grid a wide enough canvas to lay out
+    // without columns collapsing, then let the browser auto-zoom the whole
+    // page to fit the screen (the user can still pinch in/out from there).
+    var vp = document.getElementById('viewportMeta');
+    if(vp) vp.setAttribute('content', 'width=1400');
+  }
+})();
+</script>
 <style>
 :root{
   --bg:#ffffff;
@@ -596,40 +609,44 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-donut-legend .an-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
 .an-donut-legend .an-leg-sub{color:var(--text-dim); font-size:11px; margin-left:14px;}
 
-/* ===== Mobile layout ===== */
+/* ===== Mobile layout =====
+   Driven by an html.is-mobile class (set by an early inline script based on
+   the real device width) instead of a @media width query, because on phones
+   the viewport meta is switched to a fixed wide canvas (see the script in
+   <head>) so the fixed-pixel desktop grid has room to lay out and the
+   browser auto-zooms it to fit the screen. A @media(max-width) query would
+   no longer match once that fixed-width viewport is in effect. */
 .mobile-menu-btn{display:none;}
 
-@media (max-width: 860px){
-  .mobile-menu-btn{
-    display:flex; align-items:center; justify-content:center;
-    width:34px; height:34px; border-radius:8px;
-    border:1px solid var(--border-strong); background:var(--surface);
-    color:var(--text); cursor:pointer; font-size:16px;
-    position:fixed; top:10px; left:10px; z-index:200;
-  }
-
-  .layout{position:relative;}
-
-  .tabs-panel{
-    position:fixed; top:0; left:0; bottom:0;
-    width:82vw; max-width:300px;
-    transform:translateX(-100%);
-    transition:transform .2s ease;
-    z-index:150;
-    box-shadow:2px 0 16px rgba(0,0,0,0.25);
-  }
-  .tabs-panel.open{transform:translateX(0);}
-
-  .sidebar-backdrop{
-    display:none;
-    position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:140;
-  }
-  .sidebar-backdrop.open{display:block;}
-
-  .main-area{padding-top:52px;}
-
-  .modal-box{width:calc(100vw - 40px); max-width:340px;}
+html.is-mobile .mobile-menu-btn{
+  display:flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:8px;
+  border:1px solid var(--border-strong); background:var(--surface);
+  color:var(--text); cursor:pointer; font-size:16px;
+  position:fixed; top:10px; left:10px; z-index:200;
 }
+
+html.is-mobile .layout{position:relative;}
+
+html.is-mobile .tabs-panel{
+  position:fixed; top:0; left:0; bottom:0;
+  width:300px;
+  transform:translateX(-100%);
+  transition:transform .2s ease;
+  z-index:150;
+  box-shadow:2px 0 16px rgba(0,0,0,0.25);
+}
+html.is-mobile .tabs-panel.open{transform:translateX(0);}
+
+html.is-mobile .sidebar-backdrop{
+  display:none;
+  position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:140;
+}
+html.is-mobile .sidebar-backdrop.open{display:block;}
+
+html.is-mobile .main-area{padding-top:52px;}
+
+html.is-mobile .modal-box{width:340px; max-width:340px;}
 
 .login-overlay{
   position:fixed; inset:0; z-index:1000;
