@@ -1988,7 +1988,11 @@ function renderAnalytics(){
   if(!statsEl) return;
 
   const trades = activeAccount().trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
-  const values = trades.map(t=> parseAmount(t.resultaat));
+  const values = trades.map(t=>{
+    const fees = parseAmount(t.fees);
+    const swap = parseAmount(t.swap);
+    return parseAmount(t.resultaat) + (isNaN(fees) ? 0 : fees) + (isNaN(swap) ? 0 : swap);
+  });
   const wins = values.filter(v=> v>0);
   const losses = values.filter(v=> v<0);
   const aantal = trades.length;
@@ -2009,11 +2013,9 @@ function renderAnalytics(){
   const expectedValuePct = avgLoss>0 ? (expectedValue/avgLoss*100) : 0;
 
   const dailyTotals = {};
-  trades.forEach(t=>{
+  trades.forEach((t,i)=>{
     const d = t.datum || '';
-    const v = parseAmount(t.resultaat);
-    if(isNaN(v)) return;
-    dailyTotals[d] = (dailyTotals[d]||0) + v;
+    dailyTotals[d] = (dailyTotals[d]||0) + values[i];
   });
   const dayValues = Object.values(dailyTotals);
   const maxDailyDD = dayValues.length ? Math.min(0, ...dayValues) : 0;
@@ -2112,8 +2114,11 @@ function renderAnalyticsBars(trades){
   const order = [];
   trades.forEach(t=>{
     const key = t.datum || '?';
-    const v = parseAmount(t.resultaat);
-    if(isNaN(v)) return;
+    const resultaat = parseAmount(t.resultaat);
+    if(isNaN(resultaat)) return;
+    const fees = parseAmount(t.fees);
+    const swap = parseAmount(t.swap);
+    const v = resultaat + (isNaN(fees) ? 0 : fees) + (isNaN(swap) ? 0 : swap);
     if(!(key in byDay)){ byDay[key] = 0; order.push(key); }
     byDay[key] += v;
   });
