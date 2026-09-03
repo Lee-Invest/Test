@@ -1904,6 +1904,8 @@ function renderOverzichten(){
   totaalBox.innerHTML =
     overzichtRow('Profit with exchange:', fmtEUR(winstMetFees)) +
     overzichtRow('Total feesswap:', fmtEUR(totalFees + totalSwap)) +
+    overzichtRow('Fees: _____', fmtEUR(totalFees)) +
+    overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Aantal trades: __', aantal) +
     overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
     `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
