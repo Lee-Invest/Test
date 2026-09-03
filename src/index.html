@@ -1974,9 +1974,7 @@ function renderOverzichten(){
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Profit feesswap:', fmtEUR(winstMetFees)) +
     overzichtRow('Cashout: 80%', fmtEUR(totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0)) +
-    overzichtRow('Aantal trades: __', aantal) +
-    overzichtRow('Totaal: 80%', fmtEUR(totalProfit > 0 ? totalProfit * CASHOUT_PCT : 0)) +
-    overzichtRow('Total Profit:', fmtEUR(totalProfit));
+    overzichtRow('Totaal: 80%', fmtEUR(totalProfit > 0 ? totalProfit * CASHOUT_PCT : 0));
 
   renderAnalytics();
 }
