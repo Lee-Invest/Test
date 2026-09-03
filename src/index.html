@@ -282,6 +282,8 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   color:var(--text);
   box-shadow:0 1px 2px rgba(0,0,0,0.08);
 }
+.acc-tab.dragging{opacity:0.4;}
+.acc-tab.drag-over{box-shadow:inset 2px 0 0 var(--accent);}
 .acc-tab .acc-tab-name{outline:none; border-radius:4px;}
 .acc-tab .acc-tab-name[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft); padding:0 3px; cursor:text;}
 .acc-tab .acc-tab-del{
@@ -1722,14 +1724,17 @@ function renderAccountTabs(){
   wrap.innerHTML = '';
   const tab = activeTab();
 
+  let dragSrcId = null;
+
   tab.accounts.forEach(acc=>{
     const item = document.createElement('div');
     item.className = 'acc-tab' + (acc.id === tab.activeAccountId ? ' active' : '');
+    item.draggable = true;
 
     const nameEl = document.createElement('span');
     nameEl.className = 'acc-tab-name';
     nameEl.textContent = acc.name;
-    nameEl.title = 'dubbelklik om te hernoemen';
+    nameEl.title = 'dubbelklik om te hernoemen, sleep om te herschikken';
 
     const startRenameAcc = ()=>{
       nameEl.contentEditable = 'true';
@@ -1737,28 +1742,22 @@ function renderAccountTabs(){
       document.execCommand('selectAll', false, null);
     };
 
-    // Manual double-click detection: a re-render between clicks (from switching
-    // the active account) would otherwise break the browser's native dblclick.
-    let clickTimer = null;
+    // Single click switches immediately. Renaming is only via dblclick on the
+    // name — reliable because switching to an already-active tab is a no-op
+    // (no re-render happens in between the two clicks of a dblclick).
     item.onclick = (e)=>{
       if(nameEl.contentEditable === 'true') return;
-      if(clickTimer){
-        clearTimeout(clickTimer);
-        clickTimer = null;
-        startRenameAcc();
-        return;
-      }
-      clickTimer = setTimeout(()=>{
-        clickTimer = null;
-        if(tab.activeAccountId !== acc.id){
-          tab.activeAccountId = acc.id;
-          saveState();
-          renderTradesWidget();
-          renderOverzichten();
-        }
-      }, 250);
+      if(tab.activeAccountId === acc.id) return;
+      tab.activeAccountId = acc.id;
+      saveState();
+      renderTradesWidget();
+      renderOverzichten();
     };
 
+    nameEl.ondblclick = (e)=>{
+      e.stopPropagation();
+      startRenameAcc();
+    };
     nameEl.onclick = (e)=>{ if(nameEl.contentEditable === 'true') e.stopPropagation(); };
     nameEl.onblur = ()=>{
       nameEl.contentEditable = 'false';
@@ -1792,6 +1791,37 @@ function renderAccountTabs(){
       });
     };
     if(tab.accounts.length > 1) item.appendChild(delBtn);
+
+    item.ondragstart = (e)=>{
+      dragSrcId = acc.id;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try{ e.dataTransfer.setData('text/plain', acc.id); }catch(err){}
+    };
+    item.ondragend = ()=>{
+      dragSrcId = null;
+      wrap.querySelectorAll('.acc-tab').forEach(el=> el.classList.remove('dragging', 'drag-over'));
+    };
+    item.ondragover = (e)=>{
+      if(!dragSrcId || dragSrcId === acc.id) return;
+      e.preventDefault();
+      item.classList.add('drag-over');
+    };
+    item.ondragleave = ()=>{ item.classList.remove('drag-over'); };
+    item.ondrop = (e)=>{
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const srcId = dragSrcId;
+      dragSrcId = null;
+      if(!srcId || srcId === acc.id) return;
+      const fromIdx = tab.accounts.findIndex(a=>a.id === srcId);
+      const toIdx = tab.accounts.findIndex(a=>a.id === acc.id);
+      if(fromIdx === -1 || toIdx === -1) return;
+      const [moved] = tab.accounts.splice(fromIdx, 1);
+      tab.accounts.splice(toIdx, 0, moved);
+      saveState();
+      renderAccountTabs();
+    };
 
     wrap.appendChild(item);
   });
