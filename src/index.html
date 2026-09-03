@@ -1725,6 +1725,9 @@ function renderTTRows(){
         input.value = trade[col.key] || '';
         if(acc.isVirtual) input.readOnly = true;
         input.oninput = ()=>{
+          if(col.key === 'fees' && input.value !== '' && !/^[+-]/.test(input.value)){
+            input.value = '-' + input.value;
+          }
           trade[col.key] = input.value;
           if(col.key === 'resultaat'){
             trade.wv = computeWV(trade.resultaat);
