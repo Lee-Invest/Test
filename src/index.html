@@ -1724,9 +1724,16 @@ function renderTTRows(){
         input.placeholder = col.placeholder || '';
         input.value = trade[col.key] || '';
         if(acc.isVirtual) input.readOnly = true;
+        let prevFeesLen = input.value.length;
         input.oninput = ()=>{
-          if(col.key === 'fees' && input.value !== '' && !/^[+-]/.test(input.value)){
-            input.value = '-' + input.value;
+          // Only auto-prefix "-" the moment the field goes from empty to
+          // having content — not on every keystroke, so removing the "-"
+          // yourself right after typing actually sticks.
+          if(col.key === 'fees'){
+            if(prevFeesLen === 0 && input.value !== '' && !/^[+-]/.test(input.value)){
+              input.value = '-' + input.value;
+            }
+            prevFeesLen = input.value.length;
           }
           trade[col.key] = input.value;
           if(col.key === 'resultaat'){
@@ -1747,20 +1754,6 @@ function renderTTRows(){
               input.value = formatted;
               trade[col.key] = formatted;
               saveState();
-            }
-          };
-        }
-        if(col.key === 'fees'){
-          // Fees defaults to negative: auto-prefix a "-" if the typed value
-          // has no sign. Removing the "-" makes it count as a plus.
-          input.onblur = ()=>{
-            const raw = input.value.trim();
-            if(raw === '') return;
-            if(!/^[+-]/.test(raw)){
-              input.value = '-' + raw;
-              trade[col.key] = input.value;
-              saveState();
-              renderOverzichten();
             }
           };
         }
