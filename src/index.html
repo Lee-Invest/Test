@@ -869,7 +869,7 @@ html.phone-preview-frame body{
 <div class="sheet" id="sheet">
   <!-- Block: Funded account info -->
   <div class="block" data-block="funded">
-    <h2 class="title">Funded account</h2>
+    <h2 class="title" id="fundedTitle">Funded account</h2>
     <div class="info-box" id="infoBox">
       <b>Info:</b><br>
       <span data-key="l1">Trade kapitaal: € 10.000</span><br>
@@ -887,7 +887,7 @@ html.phone-preview-frame body{
 
   <!-- Block: Overzicht Maand -->
   <div class="block" data-block="maand">
-    <h2 class="title" id="maandTitle">Overzicht Maand;</h2>
+    <h2 class="title">Overzicht Maand;</h2>
     <div class="overzicht-box" id="maandBox"></div>
   </div>
 
@@ -1960,8 +1960,8 @@ function overzichtRow(label, valueHtml, suffix){
 function renderOverzichten(){
   const tab = activeTab();
   const acc = activeAccount();
-  const maandTitle = document.getElementById('maandTitle');
-  if(maandTitle) maandTitle.textContent = (acc && acc.name ? acc.name : '') + ' account:';
+  const fundedTitle = document.getElementById('fundedTitle');
+  if(fundedTitle) fundedTitle.textContent = (acc && acc.name ? acc.name : '') + ' account;';
   const trades = acc.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
   const totalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
   const gewonnen = trades.filter(t=> t.wv === 1).length;
