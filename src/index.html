@@ -303,6 +303,13 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   font-size:12px;
   font-weight:600;
 }
+.acc-tabs-month-total{
+  margin-left:auto;
+  padding:0 8px;
+  font-size:10px;
+  color:var(--text-dim);
+  white-space:nowrap;
+}
 .acc-tab-add:hover{background:var(--surface); color:var(--accent);}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 
@@ -1717,6 +1724,17 @@ function renderTTRows(){
           saveState();
           renderOverzichten();
         };
+        if(col.key === 'resultaat'){
+          input.onblur = ()=>{
+            const n = parseAmount(input.value);
+            if(!isNaN(n)){
+              const formatted = n.toLocaleString('nl-NL', {minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits:2});
+              input.value = formatted;
+              trade[col.key] = formatted;
+              saveState();
+            }
+          };
+        }
         cell.appendChild(input);
       } else {
         const input = document.createElement('input');
@@ -1910,6 +1928,18 @@ function renderAccountTabs(){
     });
   };
   wrap.appendChild(addBtn);
+
+  const monthTotal = tab.accounts.reduce((sum, a)=>{
+    return sum + a.trades.reduce((s,t)=>{
+      const n = parseAmount(t.resultaat);
+      return s + (isNaN(n) ? 0 : n);
+    }, 0);
+  }, 0);
+  const totalEl = document.createElement('span');
+  totalEl.className = 'acc-tabs-month-total';
+  totalEl.title = 'Som van alle accounts deze maand';
+  totalEl.textContent = 'Totaal maand: ' + fmtEUR(monthTotal);
+  wrap.appendChild(totalEl);
 }
 
 function renderTradesWidget(){
