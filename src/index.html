@@ -592,6 +592,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-stat-row{display:flex; align-items:flex-end; justify-content:space-between; gap:6px;}
 .an-stat-value{font-size:15px; font-weight:700; color:var(--text); line-height:1.1;}
 .an-stat-sub{font-size:9px; color:var(--text-dim); margin-top:2px;}
+.an-stat-extra-sub{font-size:8px; color:var(--text-dim); margin-top:1px;}
 .an-stat-spark{flex:0 0 auto; width:36px; height:20px;}
 .an-combo-card{display:flex; align-items:stretch; gap:8px; padding:9px 8px 8px;}
 .an-combo-half{flex:1 1 0; min-width:0;}
@@ -1951,7 +1952,7 @@ function ringSVG(pct, color){
   </svg>`;
 }
 
-function statCard(label, value, sub, sparkValues, color){
+function statCard(label, value, sub, sparkValues, color, extraSub){
   const hasSpark = sparkValues && sparkValues.length > 1;
   return `<div class="an-card">
     <div class="an-stat-label">${label}</div>
@@ -1959,6 +1960,7 @@ function statCard(label, value, sub, sparkValues, color){
       <div>
         <div class="an-stat-value">${value}</div>
         <div class="an-stat-sub">${sub}</div>
+        ${extraSub ? `<div class="an-stat-extra-sub">${extraSub}</div>` : ''}
       </div>
       ${hasSpark ? `<div class="an-stat-spark">${statSparkSVG(sparkValues, color)}</div>` : ''}
     </div>
@@ -2004,6 +2006,17 @@ function renderAnalytics(){
   const avgLoss = losses.length ? grossLoss/losses.length : 0;
   const winrateFrac = aantal>0 ? wins.length/aantal : 0;
   const expectedValue = (winrateFrac*avgWin) - ((1-winrateFrac)*avgLoss);
+  const expectedValuePct = avgLoss>0 ? (expectedValue/avgLoss*100) : 0;
+
+  const dailyTotals = {};
+  trades.forEach(t=>{
+    const d = t.datum || '';
+    const v = parseAmount(t.resultaat);
+    if(isNaN(v)) return;
+    dailyTotals[d] = (dailyTotals[d]||0) + v;
+  });
+  const dayValues = Object.values(dailyTotals);
+  const maxDailyDD = dayValues.length ? Math.min(0, ...dayValues) : 0;
 
   let running = 0, peak = 0, maxDD = 0;
   const series = [0];
@@ -2018,10 +2031,10 @@ function renderAnalytics(){
     statCard('Winrate', winrate.toFixed(2)+'%', `${wins.length} van ${aantal}`, series, 'var(--win)') +
     statCard('Gem. RR', avgRR.toFixed(2), fmtEUR(gemPerTrade)+' / trade', series, 'var(--accent)') +
     statCard('Totaal Winst', fmtEUR(totalWinst), 'Deze maand', series, totalWinst>=0?'var(--win)':'var(--loss)') +
-    statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)') +
+    statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)', `max/dag: ${fmtEUR(maxDailyDD)}`) +
     comboStatCard(
       'Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'),
-      'Expected Value', fmtEUR(expectedValue), 'per trade'
+      'Expected Value', expectedValuePct.toFixed(1)+'%', 'per trade (R)'
     );
 
   const ringHTML = `<div class="an-ring-wrap">${ringSVG(winrate, 'var(--win)')}<div class="an-ring-label">${winrate.toFixed(0)}%</div></div>`;
