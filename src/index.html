@@ -1210,12 +1210,19 @@ function newAccount(name){
   return { id: uid(), name: name || 'Nieuw account', trades: newAccountTrades(), mt5: newMt5Config() };
 }
 
+function getDefaultInfoTemplate(){
+  try{
+    if(state && state.infoTemplate) return {...state.infoTemplate};
+  }catch(e){}
+  return defaultInfo();
+}
+
 function newTab(name){
   const acc = newAccount('Main');
   return {
     id: uid(),
     name: name || 'Nieuwe maand',
-    info: defaultInfo(),
+    info: getDefaultInfoTemplate(),
     accounts: [acc],
     activeAccountId: acc.id,
     screens:[
@@ -1535,7 +1542,11 @@ function renderInfo(){
   document.querySelectorAll('#infoBox span[data-key]').forEach(span=>{
     span.contentEditable = "true";
     span.innerHTML = tab.info[span.dataset.key];
-    span.oninput = ()=>{ tab.info[span.dataset.key] = span.innerHTML; saveState(); };
+    span.oninput = ()=>{
+      tab.info[span.dataset.key] = span.innerHTML;
+      state.infoTemplate = {...tab.info};
+      saveState();
+    };
   });
 }
 
