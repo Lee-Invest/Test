@@ -1887,7 +1887,7 @@ function renderOverzichten(){
     const sw = parseAmount(t.swap);
     return s + (isNaN(sw) ? 0 : sw);
   },0);
-  const winstMetFees = totalWinst - totalFees;
+  const winstMetFees = totalWinst - totalFees + totalSwap;
 
   const maandBox = document.getElementById('maandBox');
   maandBox.innerHTML =
@@ -1902,7 +1902,7 @@ function renderOverzichten(){
 
   const totaalBox = document.getElementById('totaalBox');
   totaalBox.innerHTML =
-    overzichtRow('Winst: _____ €', fmtEUR(winstMetFees)) +
+    overzichtRow('Winst met transactie-/exchangekosten:', fmtEUR(winstMetFees)) +
     overzichtRow('Fees: _____', fmtEUR(totalFees)) +
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Aantal trades: __', aantal) +
