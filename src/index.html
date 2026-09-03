@@ -1672,7 +1672,7 @@ function renderTTRows(){
       } else if(col.kind === 'base'){
         const input = document.createElement('input');
         input.type = 'text';
-        if(col.key === 'resultaat' || col.key === 'rr') input.inputMode = 'decimal';
+        if(col.key === 'resultaat' || col.key === 'rr') input.inputMode = 'text';
         input.placeholder = col.placeholder || '';
         input.value = trade[col.key] || '';
         input.oninput = ()=>{
