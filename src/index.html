@@ -1906,7 +1906,7 @@ function renderOverzichten(){
     overzichtRow('Fees: _____', fmtEUR(totalFees)) +
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Profit feesswap:', fmtEUR(winstMetFees)) +
-    overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
+    overzichtRow('Cashout: 80%', fmtEUR(totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0)) +
     `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
 
   const maandenField = document.getElementById('maandenField');
