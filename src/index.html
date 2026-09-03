@@ -2263,18 +2263,11 @@ function renderScreens(){
   };
   grid.appendChild(addBtn);
 
-  syncScreensGridWidth();
-}
-
-function syncScreensGridWidth(){
-  const grid = document.getElementById('screensGrid');
-  const stack = document.querySelector('.screens-stack');
-  if(!grid || !stack) return;
-  const targetWidth = stack.getBoundingClientRect().width;
-  if(targetWidth > 0){
-    grid.style.width = targetWidth + 'px';
-    grid.style.minWidth = targetWidth + 'px';
-  }
+  // Explicit fixed-width tracks for every real column, plus one flexible
+  // trailing track with no content — that 1fr track is what makes the
+  // grid's own border/background stretch to fill the rest of the row
+  // instead of shrinking to fit just the screenshot columns.
+  grid.style.gridTemplateColumns = `repeat(${tab.screens.length + 1}, 180px) 1fr`;
 }
 
 document.getElementById('addRow').onclick = ()=>{
@@ -2290,7 +2283,6 @@ document.getElementById('mt5Btn').onclick = ()=>{
 
 document.getElementById('undoBtn').onclick = undoState;
 document.getElementById('redoBtn').onclick = redoState;
-window.addEventListener('resize', ()=>{ syncScreensGridWidth(); });
 
 document.getElementById('phonePreviewBtn').onclick = ()=>{
   const html = document.documentElement;
@@ -2298,7 +2290,6 @@ document.getElementById('phonePreviewBtn').onclick = ()=>{
   html.classList.toggle('is-mobile', active);
   document.getElementById('phonePreviewBtn').classList.toggle('active', active);
   closeMobileSidebar();
-  setTimeout(syncScreensGridWidth, 50);
 };
 document.addEventListener('keydown', (e)=>{
   if(!(e.ctrlKey || e.metaKey)) return;
