@@ -1238,6 +1238,11 @@ function loadState(){
         }
         if(!Array.isArray(parsed.extraColumns)) parsed.extraColumns = [];
         if(!parsed.colWidths || typeof parsed.colWidths !== 'object') parsed.colWidths = {};
+        // One-time fix: earlier versions saved Fees/Swap at their old 44px
+        // default before they were widened to fit "Fees"/"Swap" fully —
+        // drop any stale saved width so the current default takes over.
+        if(parsed.colWidths.fees === 44) delete parsed.colWidths.fees;
+        if(parsed.colWidths.swap === 44) delete parsed.colWidths.swap;
         if(!Array.isArray(parsed.hiddenBaseColumns)) parsed.hiddenBaseColumns = [];
         parsed.tabs.forEach(t=>{
           if(!Array.isArray(t.accounts) || !t.accounts.length){
