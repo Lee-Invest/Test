@@ -2037,7 +2037,7 @@ function renderAnalytics(){
     statCard('Winrate', winrate.toFixed(2)+'%', `${wins.length} van ${aantal}`, series, 'var(--win)') +
     statCard('Gem. RR', avgRR.toFixed(2), fmtEUR(gemPerTrade)+' / trade', series, 'var(--accent)') +
     statCard('Totaal Winst', fmtEUR(totalWinst), 'Deze maand', series, totalWinst>=0?'var(--win)':'var(--loss)') +
-    statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)', `max/dag: ${fmtEUR(maxDailyDD)}`) +
+    statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*10).toFixed(3)+'%' : '') : '0%', series, 'var(--loss)', `max/dag: ${fmtEUR(maxDailyDD)}`) +
     comboStatCard(
       'Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'),
       'Expected Value', (expectedValuePct/100).toFixed(2)+'R', 'per trade'
