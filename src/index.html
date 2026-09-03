@@ -1181,7 +1181,7 @@ function defaultInfo(){
 }
 
 function newAccountTrades(){
-  return Array.from({length: 24}, ()=> ({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''}));
+  return Array.from({length: 24}, ()=> ({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, fees:'', swap:'', notities:''}));
 }
 
 function newMt5Config(){
@@ -1217,6 +1217,8 @@ const BASE_COLUMNS = [
   {key:'resultaat', label:'Resultaat', width:100, placeholder:'300 of -100'},
   {key:'rr', label:'RR', width:44, placeholder:''},
   {key:'wv', label:'W/V', width:44, placeholder:''},
+  {key:'fees', label:'Fees', width:44, placeholder:''},
+  {key:'swap', label:'Swap', width:44, placeholder:''},
   {key:'notities', label:'Notities', width:160, placeholder:'notitie'}
 ];
 
@@ -2158,7 +2160,7 @@ function renderScreens(){
 }
 
 document.getElementById('addRow').onclick = ()=>{
-  activeAccount().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, notities:''});
+  activeAccount().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, fees:'', swap:'', notities:''});
   saveState();
   renderRows();
   renderOverzichten();
