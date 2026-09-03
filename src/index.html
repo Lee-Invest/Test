@@ -303,13 +303,12 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   font-size:12px;
   font-weight:600;
 }
-.acc-tabs-month-total{
+.acc-tab-total{
   margin-left:auto;
-  padding:0 8px;
-  font-size:10px;
-  color:var(--text-dim);
-  white-space:nowrap;
+  font-weight:700;
+  border:1px dashed var(--border-strong);
 }
+.acc-tab-total.active{border-style:solid; border-color:var(--accent); color:var(--accent);}
 .acc-tab-add:hover{background:var(--surface); color:var(--accent);}
 .table-scroll{overflow-x:auto; max-width:100%; min-width:0;}
 
@@ -347,6 +346,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .tt-cell .tt-label[contenteditable="true"]{outline:1px solid var(--accent); background:var(--accent-soft);}
+.tt-cell input:read-only{color:var(--text-dim); cursor:default;}
 .tt-cell input{
   width:100%;
   border:none;
@@ -1313,8 +1313,19 @@ function activeTab(){
   return state.tabs.find(t=>t.id === state.activeTabId) || state.tabs[0];
 }
 
+const TOTAL_VIEW_ID = 'TOTAL_VIEW';
+
 function activeAccount(){
   const tab = activeTab();
+  if(tab.activeAccountId === TOTAL_VIEW_ID){
+    return {
+      id: TOTAL_VIEW_ID,
+      name: 'Total',
+      isVirtual: true,
+      trades: [].concat(...tab.accounts.map(a=> a.trades)),
+      mt5: newMt5Config()
+    };
+  }
   return tab.accounts.find(a=>a.id === tab.activeAccountId) || tab.accounts[0];
 }
 
@@ -1712,6 +1723,7 @@ function renderTTRows(){
         if(col.key === 'resultaat' || col.key === 'rr') input.inputMode = 'text';
         input.placeholder = col.placeholder || '';
         input.value = trade[col.key] || '';
+        if(acc.isVirtual) input.readOnly = true;
         input.oninput = ()=>{
           trade[col.key] = input.value;
           if(col.key === 'resultaat'){
@@ -1740,6 +1752,7 @@ function renderTTRows(){
         const input = document.createElement('input');
         input.type = 'text';
         input.value = trade.extra[col.key] || '';
+        if(acc.isVirtual) input.readOnly = true;
         input.oninput = ()=>{
           trade.extra[col.key] = input.value;
           saveState();
@@ -1749,18 +1762,20 @@ function renderTTRows(){
       rowEl.appendChild(cell);
     });
 
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'tt-row-del';
-    delBtn.title = 'verwijder';
-    delBtn.textContent = '✕';
-    delBtn.onclick = ()=>{
-      acc.trades = acc.trades.filter(t=>t.id !== trade.id);
-      saveState();
-      renderTradesWidget();
-      renderOverzichten();
-    };
-    rowEl.appendChild(delBtn);
+    if(!acc.isVirtual){
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'tt-row-del';
+      delBtn.title = 'verwijder';
+      delBtn.textContent = '✕';
+      delBtn.onclick = ()=>{
+        acc.trades = acc.trades.filter(t=>t.id !== trade.id);
+        saveState();
+        renderTradesWidget();
+        renderOverzichten();
+      };
+      rowEl.appendChild(delBtn);
+    }
 
     rowsEl.appendChild(rowEl);
   });
@@ -1929,17 +1944,18 @@ function renderAccountTabs(){
   };
   wrap.appendChild(addBtn);
 
-  const monthTotal = tab.accounts.reduce((sum, a)=>{
-    return sum + a.trades.reduce((s,t)=>{
-      const n = parseAmount(t.resultaat);
-      return s + (isNaN(n) ? 0 : n);
-    }, 0);
-  }, 0);
-  const totalEl = document.createElement('span');
-  totalEl.className = 'acc-tabs-month-total';
-  totalEl.title = 'Som van alle accounts deze maand';
-  totalEl.textContent = 'Totaal maand: ' + fmtEUR(monthTotal);
-  wrap.appendChild(totalEl);
+  const totalItem = document.createElement('div');
+  totalItem.className = 'acc-tab acc-tab-total' + (tab.activeAccountId === TOTAL_VIEW_ID ? ' active' : '');
+  totalItem.title = 'Total maand: winst, kosten en cashout van alle accounts samen';
+  totalItem.textContent = 'Total month';
+  totalItem.onclick = ()=>{
+    if(tab.activeAccountId === TOTAL_VIEW_ID) return;
+    tab.activeAccountId = TOTAL_VIEW_ID;
+    saveState();
+    renderTradesWidget();
+    renderOverzichten();
+  };
+  wrap.appendChild(totalItem);
 }
 
 function renderTradesWidget(){
@@ -2355,14 +2371,18 @@ function renderScreens(){
 }
 
 document.getElementById('addRow').onclick = ()=>{
-  activeAccount().trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, fees:'', swap:'', notities:''});
+  const acc = activeAccount();
+  if(acc.isVirtual) return;
+  acc.trades.push({id:uid(), datum:'', asset:'', resultaat:'', rr:'3', wv:null, fees:'', swap:'', notities:''});
   saveState();
   renderRows();
   renderOverzichten();
 };
 
 document.getElementById('mt5Btn').onclick = ()=>{
-  openMt5Modal(activeAccount());
+  const acc = activeAccount();
+  if(acc.isVirtual) return;
+  openMt5Modal(acc);
 };
 
 document.getElementById('undoBtn').onclick = undoState;
@@ -2385,9 +2405,13 @@ document.addEventListener('keydown', (e)=>{
 function updateMt5SyncInfo(){
   const acc = activeAccount();
   const btn = document.getElementById('mt5Btn');
+  const addBtn = document.getElementById('addRow');
   const infoEl = document.getElementById('mt5SyncInfo');
   if(!btn) return;
+  btn.style.display = acc.isVirtual ? 'none' : '';
+  if(addBtn) addBtn.style.display = acc.isVirtual ? 'none' : '';
   if(infoEl) infoEl.textContent = '';
+  if(acc.isVirtual) return;
   const status = (acc.mt5 && acc.mt5.status) || 'none';
   if(status === 'connected'){
     btn.style.color = 'var(--win)';
