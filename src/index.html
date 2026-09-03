@@ -1862,14 +1862,14 @@ function overzichtRow(label, valueHtml, suffix){
 
 function renderOverzichten(){
   const tab = activeTab();
-  const trades = activeAccount().trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
+  const acc = activeAccount();
+  const trades = acc.trades.filter(t=> !isNaN(parseAmount(t.resultaat)));
   const totalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
   const gewonnen = trades.filter(t=> t.wv === 1).length;
   const verloren = trades.filter(t=> t.wv === 0).length;
   const aantal = trades.length;
   const winrate = aantal > 0 ? (gewonnen/aantal*100) : 0;
   const gemiddeld = aantal > 0 ? totalWinst/aantal : 0;
-  const cashout = totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0;
   const avgRR = (()=>{
     const rrs = trades.map(t=>parseAmount(t.rr)).filter(n=>!isNaN(n));
     return rrs.length ? rrs.reduce((a,b)=>a+b,0)/rrs.length : 0;
@@ -1879,6 +1879,15 @@ function renderOverzichten(){
     if(isNaN(rr)) return s;
     return s + (t.wv===1 ? rr : (t.wv===0 ? -1 : 0));
   },0);
+  const totalFees = acc.trades.reduce((s,t)=>{
+    const f = parseAmount(t.fees);
+    return s + (isNaN(f) ? 0 : f);
+  },0);
+  const totalSwap = acc.trades.reduce((s,t)=>{
+    const sw = parseAmount(t.swap);
+    return s + (isNaN(sw) ? 0 : sw);
+  },0);
+  const winstMetFees = totalWinst - totalFees;
 
   const maandBox = document.getElementById('maandBox');
   maandBox.innerHTML =
@@ -1889,13 +1898,13 @@ function renderOverzichten(){
     overzichtRow('Verloren Trades: __', verloren) +
     overzichtRow('Gewonnen Trades:', gewonnen) +
     overzichtRow('Totaal RR:', totaalRR.toFixed(0)) +
-    overzichtRow('Cashout: 80%', fmtEUR(cashout));
+    overzichtRow('Winst (afgerond):', fmtEUR(Math.round(totalWinst)));
 
   const totaalBox = document.getElementById('totaalBox');
   totaalBox.innerHTML =
-    overzichtRow('Winst: _____ €', fmtEUR(totalWinst)) +
-    overzichtRow('RR: _____', avgRR.toFixed(2).replace('.',','), 'RR') +
-    overzichtRow('Winst rate: _____', winrate.toFixed(11).replace('.',',') + '%') +
+    overzichtRow('Winst met fees:', fmtEUR(winstMetFees)) +
+    overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
+    overzichtRow('Totaal kosten:', fmtEUR(totalFees)) +
     overzichtRow('Aantal trades: __', aantal) +
     overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
     `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
