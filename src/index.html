@@ -626,6 +626,14 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   border-radius:20px; padding:2px 8px;
 }
 .an-equity-card svg, .an-bars-card svg{width:100%; height:76px; display:block;}
+.an-equity-wrap{position:relative;}
+.an-equity-label{
+  position:absolute; left:2px; font-size:9px; line-height:1;
+  color:var(--text-dim); font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  pointer-events:none;
+}
+.an-equity-max{top:2px;}
+.an-equity-min{bottom:2px;}
 .an-donut-wrap{display:flex; align-items:center; gap:8px;}
 .an-donut-wrap svg{width:56px; height:56px; flex:0 0 auto;}
 .an-donut-legend{display:flex; flex-direction:column; gap:4px; font-size:10px;}
@@ -899,7 +907,11 @@ html.phone-preview-frame body{
             <span>Equity Curve</span>
             <span class="an-pill">Maand</span>
           </div>
-          <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+          <div class="an-equity-wrap">
+            <svg id="anEquity" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+            <span class="an-equity-label an-equity-max" id="anEquityMax"></span>
+            <span class="an-equity-label an-equity-min" id="anEquityMin"></span>
+          </div>
         </div>
         <div class="an-card an-donut-card">
           <div class="an-card-head"><span>Winst / Verlies</span></div>
@@ -2077,11 +2089,16 @@ function renderAnalyticsEquity(series){
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--border-strong)"/>
     <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border-strong)"/>
     <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--border)" stroke-dasharray="3,3"/>
-    <text x="${padL-6}" y="${padT+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(max)}</text>
-    <text x="${padL-6}" y="${(H-padB)+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${fmtEUR(min)}</text>
     ${areaPath ? `<path d="${areaPath}" fill="${up?'var(--win)':'var(--loss)'}" opacity="0.12"/>` : ''}
     ${series.length>1 ? `<path d="${linePath}" fill="none" stroke="${up?'var(--win)':'var(--loss)'}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
   `;
+
+  // Labels rendered as real HTML text (not inside the SVG) so the
+  // non-uniform preserveAspectRatio="none" stretch never squishes them thin.
+  const maxLabel = document.getElementById('anEquityMax');
+  const minLabel = document.getElementById('anEquityMin');
+  if(maxLabel) maxLabel.textContent = fmtEUR(max);
+  if(minLabel) minLabel.textContent = fmtEUR(min);
 }
 
 function renderAnalyticsDonut(winCount, lossCount){
