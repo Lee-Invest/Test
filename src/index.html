@@ -422,6 +422,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   border-radius:8px;
   overflow:hidden;
   width:100%;
+  min-width:max-content;
 }
 .screen-col{border-left:1px solid var(--border-strong);}
 .screen-col:first-child{border-left:none;}
@@ -2239,7 +2240,7 @@ function renderScreens(){
     div.appendChild(num);
 
     const ta = document.createElement('textarea');
-    ta.placeholder = '?';
+    ta.placeholder = '';
     ta.value = col.text;
     ta.oninput = ()=>{ col.text = ta.value; saveState(); };
     div.appendChild(ta);
@@ -2261,11 +2262,13 @@ function renderScreens(){
   };
   grid.appendChild(addBtn);
 
-  // Every column (screenshots + add button) is flexible between 140px and
-  // 1fr, so the grid always fills exactly 100% of its container — matching
-  // the dashboard's width at any window size — down to a 140px floor per
-  // column, below which it falls back to horizontal scrolling.
-  grid.style.gridTemplateColumns = `repeat(${tab.screens.length + 1}, minmax(140px, 1fr))`;
+  // Fixed 180px columns (screenshots + add button) so the section always
+  // looks exactly the same regardless of window size — a trailing 1fr
+  // filler stretches the border to the dashboard's edge when there's
+  // room, and once the window is too narrow to fit, min-width:max-content
+  // keeps every column at its full size and the section scrolls
+  // horizontally instead of shrinking.
+  grid.style.gridTemplateColumns = `repeat(${tab.screens.length + 1}, 180px) 1fr`;
 }
 
 document.getElementById('addRow').onclick = ()=>{
