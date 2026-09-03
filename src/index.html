@@ -1954,6 +1954,7 @@ function renderOverzichten(){
     return s + (isNaN(sw) ? 0 : sw);
   },0);
   const winstMetFees = totalWinst + totalFees + totalSwap;
+  const totalProfit = totalWinst - totalFees - totalSwap;
 
   const maandBox = document.getElementById('maandBox');
   maandBox.innerHTML =
@@ -1973,8 +1974,9 @@ function renderOverzichten(){
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Profit feesswap:', fmtEUR(winstMetFees)) +
     overzichtRow('Cashout: 80%', fmtEUR(totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0)) +
-    overzichtRow('Total Profit:', fmtEUR(totalWinst - totalFees - totalSwap)) +
-    overzichtRow('Totaal: 80%', fmtEUR(winstMetFees > 0 ? winstMetFees * CASHOUT_PCT : 0));
+    overzichtRow('Aantal trades: __', aantal) +
+    overzichtRow('Totaal: 80%', fmtEUR(totalProfit > 0 ? totalProfit * CASHOUT_PCT : 0)) +
+    overzichtRow('Total Profit:', fmtEUR(totalProfit));
 
   renderAnalytics();
 }
