@@ -386,6 +386,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 
 .overzicht-box{display:flex; flex-direction:column; gap:6px;}
 .overzicht-row{display:flex; align-items:center; gap:8px; justify-content:space-between;}
+.overzicht-row-spacer{height:18px;}
 .overzicht-row label{white-space:nowrap; font-size:12px; color:var(--text);}
 .overzicht-row .field{
   border:1px solid var(--border-strong);
@@ -1974,6 +1975,7 @@ function renderOverzichten(){
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
     overzichtRow('Profit feesswap:', fmtEUR(winstMetFees)) +
     overzichtRow('Cashout: 80%', fmtEUR(totalWinst > 0 ? totalWinst * CASHOUT_PCT : 0)) +
+    `<div class="overzicht-row-spacer"></div>` +
     overzichtRow('Totaal: 80%', fmtEUR(totalProfit > 0 ? totalProfit * CASHOUT_PCT : 0));
 
   renderAnalytics();
