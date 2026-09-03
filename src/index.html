@@ -1998,7 +1998,8 @@ function renderAnalytics(){
   const aantal = trades.length;
   const winrate = aantal>0 ? (wins.length/aantal*100) : 0;
   const totalWinst = values.reduce((a,b)=>a+b,0);
-  const gemPerTrade = aantal>0 ? totalWinst/aantal : 0;
+  const rawTotalWinst = trades.reduce((s,t)=> s + parseAmount(t.resultaat), 0);
+  const gemPerTrade = aantal>0 ? rawTotalWinst/aantal : 0;
   const avgRR = (()=>{
     const rrs = trades.map(t=>parseAmount(t.rr)).filter(n=>!isNaN(n));
     return rrs.length ? rrs.reduce((a,b)=>a+b,0)/rrs.length : 0;
