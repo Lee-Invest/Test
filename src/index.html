@@ -1547,10 +1547,16 @@ function escapeAttr(v){
   return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
+function updateFundedTitle(){
+  const fundedTitle = document.getElementById('fundedTitle');
+  if(!fundedTitle) return;
+  const acc = activeAccount();
+  fundedTitle.textContent = 'Account: ' + (acc && acc.name ? acc.name : 'Funded account');
+}
+
 function renderInfo(){
   const tab = activeTab();
-  const fundedTitle = document.getElementById('fundedTitle');
-  if(fundedTitle) fundedTitle.textContent = 'account: ' + (tab.name || 'Funded account');
+  updateFundedTitle();
   document.querySelectorAll('#infoBox span[data-key]').forEach(span=>{
     span.contentEditable = "true";
     span.innerHTML = tab.info[span.dataset.key];
@@ -1949,6 +1955,7 @@ function renderTradesWidget(){
   renderTTHead();
   renderTTRows();
   updateMt5SyncInfo();
+  updateFundedTitle();
 }
 
 function renderRows(){
