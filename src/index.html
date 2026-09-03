@@ -2003,14 +2003,18 @@ function renderAnalytics(){
     const rrs = trades.map(t=>parseAmount(t.rr)).filter(n=>!isNaN(n));
     return rrs.length ? rrs.reduce((a,b)=>a+b,0)/rrs.length : 0;
   })();
-  const grossWin = wins.reduce((a,b)=>a+b,0);
-  const grossLoss = Math.abs(losses.reduce((a,b)=>a+b,0));
-  const profitFactor = grossLoss>0 ? grossWin/grossLoss : (grossWin>0 ? Infinity : 0);
-  const avgWin = wins.length ? grossWin/wins.length : 0;
-  const avgLoss = losses.length ? grossLoss/losses.length : 0;
-  const winrateFrac = aantal>0 ? wins.length/aantal : 0;
-  const expectedValue = (winrateFrac*avgWin) - ((1-winrateFrac)*avgLoss);
-  const expectedValuePct = avgLoss>0 ? (expectedValue/avgLoss*100) : 0;
+  // Profit Factor and Expected Value stay based on Resultaat only (no fees/swap).
+  const rawValues = trades.map(t=> parseAmount(t.resultaat));
+  const rawWins = rawValues.filter(v=> v>0);
+  const rawLosses = rawValues.filter(v=> v<0);
+  const rawGrossWin = rawWins.reduce((a,b)=>a+b,0);
+  const rawGrossLoss = Math.abs(rawLosses.reduce((a,b)=>a+b,0));
+  const profitFactor = rawGrossLoss>0 ? rawGrossWin/rawGrossLoss : (rawGrossWin>0 ? Infinity : 0);
+  const rawAvgWin = rawWins.length ? rawGrossWin/rawWins.length : 0;
+  const rawAvgLoss = rawLosses.length ? rawGrossLoss/rawLosses.length : 0;
+  const rawWinrateFrac = aantal>0 ? rawWins.length/aantal : 0;
+  const expectedValue = (rawWinrateFrac*rawAvgWin) - ((1-rawWinrateFrac)*rawAvgLoss);
+  const expectedValuePct = rawAvgLoss>0 ? (expectedValue/rawAvgLoss*100) : 0;
 
   const dailyTotals = {};
   trades.forEach((t,i)=>{
