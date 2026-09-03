@@ -1902,9 +1902,9 @@ function renderOverzichten(){
 
   const totaalBox = document.getElementById('totaalBox');
   totaalBox.innerHTML =
-    overzichtRow('Winst met fees:', fmtEUR(winstMetFees)) +
+    overzichtRow('Winst: _____ €', fmtEUR(winstMetFees)) +
+    overzichtRow('Fees: _____', fmtEUR(totalFees)) +
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
-    overzichtRow('Totaal kosten:', fmtEUR(totalFees)) +
     overzichtRow('Aantal trades: __', aantal) +
     overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
     `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
