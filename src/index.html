@@ -348,7 +348,7 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
   color:var(--text);
 }
 .tt-cell input:focus{outline:1px solid var(--accent); background:var(--accent-soft);}
-.tt-wv{justify-content:center; font-weight:bold;}
+.tt-wv{justify-content:center; font-weight:normal;}
 .tt-del-col{
   position:absolute; top:2px; right:14px; font-size:9px; cursor:pointer; color:var(--text-dim);
   opacity:0; pointer-events:none; transition:opacity .12s ease;
@@ -1905,7 +1905,7 @@ function renderOverzichten(){
     overzichtRow('Total feesswap:', fmtEUR(totalFees + totalSwap)) +
     overzichtRow('Fees: _____', fmtEUR(totalFees)) +
     overzichtRow('Swap: _____', fmtEUR(totalSwap)) +
-    overzichtRow('Profit with feesswap:', fmtEUR(winstMetFees)) +
+    overzichtRow('Profit feesswap:', fmtEUR(winstMetFees)) +
     overzichtRow('Gemiddeld: € per', fmtEUR(gemiddeld)) +
     `<div class="overzicht-row"><label>Maanden:</label><div class="field" id="maandenField" contenteditable="true">${tab.maanden}</div></div>`;
 
