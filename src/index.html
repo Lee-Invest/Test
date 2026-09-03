@@ -418,12 +418,10 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .screens-grid{
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:180px;
   border:1px solid var(--border-strong);
   border-radius:8px;
   overflow:hidden;
   width:100%;
-  min-width:max-content;
 }
 .screen-col{border-left:1px solid var(--border-strong);}
 .screen-col:first-child{border-left:none;}
@@ -2263,11 +2261,11 @@ function renderScreens(){
   };
   grid.appendChild(addBtn);
 
-  // Explicit fixed-width tracks for every real column, plus one flexible
-  // trailing track with no content — that 1fr track is what makes the
-  // grid's own border/background stretch to fill the rest of the row
-  // instead of shrinking to fit just the screenshot columns.
-  grid.style.gridTemplateColumns = `repeat(${tab.screens.length + 1}, 180px) 1fr`;
+  // Every column (screenshots + add button) is flexible between 140px and
+  // 1fr, so the grid always fills exactly 100% of its container — matching
+  // the dashboard's width at any window size — down to a 140px floor per
+  // column, below which it falls back to horizontal scrolling.
+  grid.style.gridTemplateColumns = `repeat(${tab.screens.length + 1}, minmax(140px, 1fr))`;
 }
 
 document.getElementById('addRow').onclick = ()=>{
