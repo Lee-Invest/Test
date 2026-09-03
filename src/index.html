@@ -1665,7 +1665,7 @@ function renderTTRows(){
       if(col.kind === 'base' && col.key === 'wv'){
         cell.classList.add('tt-wv');
         cell.textContent = wv===1?'1':(wv===0?'0':'');
-        cell.style.color = wv===1?'var(--win)':(wv===0?'var(--loss)':'');
+        cell.style.color = 'var(--text)';
         wvCell = cell;
       } else if(col.kind === 'base'){
         const input = document.createElement('input');
@@ -1679,7 +1679,7 @@ function renderTTRows(){
             trade.wv = computeWV(trade.resultaat);
             if(wvCell){
               wvCell.textContent = trade.wv===1?'1':(trade.wv===0?'0':'');
-              wvCell.style.color = trade.wv===1?'var(--win)':(trade.wv===0?'var(--loss)':'');
+              wvCell.style.color = 'var(--text)';
             }
           }
           saveState();
