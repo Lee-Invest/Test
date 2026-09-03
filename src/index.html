@@ -593,6 +593,10 @@ h2.title{font-size:14px; font-weight:bold; margin:0 0 8px 0; color:var(--text);}
 .an-stat-value{font-size:15px; font-weight:700; color:var(--text); line-height:1.1;}
 .an-stat-sub{font-size:9px; color:var(--text-dim); margin-top:2px;}
 .an-stat-spark{flex:0 0 auto; width:36px; height:20px;}
+.an-combo-card{display:flex; align-items:stretch; gap:8px; padding:9px 8px 8px;}
+.an-combo-half{flex:1 1 0; min-width:0;}
+.an-combo-half .an-stat-value{font-size:13px;}
+.an-combo-divider{width:1px; background:var(--border); flex:0 0 auto;}
 .an-ring-wrap{position:relative; width:28px; height:28px; flex:0 0 auto;}
 .an-ring-wrap svg{width:100%; height:100%;}
 .an-ring-label{
@@ -1961,6 +1965,22 @@ function statCard(label, value, sub, sparkValues, color){
   </div>`;
 }
 
+function comboStatCard(labelA, valueA, subA, labelB, valueB, subB){
+  return `<div class="an-card an-combo-card">
+    <div class="an-combo-half">
+      <div class="an-stat-label">${labelA}</div>
+      <div class="an-stat-value">${valueA}</div>
+      <div class="an-stat-sub">${subA}</div>
+    </div>
+    <div class="an-combo-divider"></div>
+    <div class="an-combo-half">
+      <div class="an-stat-label">${labelB}</div>
+      <div class="an-stat-value">${valueB}</div>
+      <div class="an-stat-sub">${subB}</div>
+    </div>
+  </div>`;
+}
+
 function renderAnalytics(){
   const statsEl = document.getElementById('anStats');
   if(!statsEl) return;
@@ -1980,6 +2000,10 @@ function renderAnalytics(){
   const grossWin = wins.reduce((a,b)=>a+b,0);
   const grossLoss = Math.abs(losses.reduce((a,b)=>a+b,0));
   const profitFactor = grossLoss>0 ? grossWin/grossLoss : (grossWin>0 ? Infinity : 0);
+  const avgWin = wins.length ? grossWin/wins.length : 0;
+  const avgLoss = losses.length ? grossLoss/losses.length : 0;
+  const winrateFrac = aantal>0 ? wins.length/aantal : 0;
+  const expectedValue = (winrateFrac*avgWin) - ((1-winrateFrac)*avgLoss);
 
   let running = 0, peak = 0, maxDD = 0;
   const series = [0];
@@ -1995,7 +2019,10 @@ function renderAnalytics(){
     statCard('Gem. RR', avgRR.toFixed(2), fmtEUR(gemPerTrade)+' / trade', series, 'var(--accent)') +
     statCard('Totaal Winst', fmtEUR(totalWinst), 'Deze maand', series, totalWinst>=0?'var(--win)':'var(--loss)') +
     statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)') +
-    statCard('Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'), series, 'var(--accent-2, var(--accent))');
+    comboStatCard(
+      'Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'),
+      'Expected Value', fmtEUR(expectedValue), 'per trade'
+    );
 
   const ringHTML = `<div class="an-ring-wrap">${ringSVG(winrate, 'var(--win)')}<div class="an-ring-label">${winrate.toFixed(0)}%</div></div>`;
   const firstCard = statsEl.children[0];
