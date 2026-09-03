@@ -2040,7 +2040,7 @@ function renderAnalytics(){
     statCard('Max Drawdown', fmtEUR(-maxDD), maxDD>0 ? (totalWinst!==0 ? (maxDD/(peak||1)*100).toFixed(2)+'%' : '') : '0%', series, 'var(--loss)', `max/dag: ${fmtEUR(maxDailyDD)}`) +
     comboStatCard(
       'Profit Factor', isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞', profitFactor>=1.5?'Goed':(profitFactor>=1?'Ok':'Zwak'),
-      'Expected Value', expectedValuePct.toFixed(1)+'%', 'per trade (R)'
+      'Expected Value', (expectedValuePct/100).toFixed(2)+'R', 'per trade'
     );
 
   const ringHTML = `<div class="an-ring-wrap">${ringSVG(winrate, 'var(--win)')}<div class="an-ring-label">${winrate.toFixed(0)}%</div></div>`;
