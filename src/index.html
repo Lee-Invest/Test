@@ -1994,16 +1994,17 @@ function renderOverzichten(){
     if(isNaN(rr)) return s;
     return s + (t.wv===1 ? rr : (t.wv===0 ? -1 : 0));
   },0);
+  // Fees always count as a cost (negative), whatever sign was typed.
   const totalFees = acc.trades.reduce((s,t)=>{
     const f = parseAmount(t.fees);
-    return s + (isNaN(f) ? 0 : f);
+    return s - (isNaN(f) ? 0 : Math.abs(f));
   },0);
   const totalSwap = acc.trades.reduce((s,t)=>{
     const sw = parseAmount(t.swap);
     return s + (isNaN(sw) ? 0 : sw);
   },0);
   const winstMetFees = totalWinst + totalFees + totalSwap;
-  const totalProfit = totalWinst - totalFees - totalSwap;
+  const totalProfit = totalWinst + totalFees - totalSwap;
 
   const maandBox = document.getElementById('maandBox');
   maandBox.innerHTML =
@@ -2102,7 +2103,7 @@ function renderAnalytics(){
   const values = trades.map(t=>{
     const fees = parseAmount(t.fees);
     const swap = parseAmount(t.swap);
-    return parseAmount(t.resultaat) + (isNaN(fees) ? 0 : fees) + (isNaN(swap) ? 0 : swap);
+    return parseAmount(t.resultaat) - (isNaN(fees) ? 0 : Math.abs(fees)) + (isNaN(swap) ? 0 : swap);
   });
   const wins = values.filter(v=> v>0);
   const losses = values.filter(v=> v<0);
@@ -2239,7 +2240,7 @@ function renderAnalyticsBars(trades){
     if(isNaN(resultaat)) return;
     const fees = parseAmount(t.fees);
     const swap = parseAmount(t.swap);
-    const v = resultaat + (isNaN(fees) ? 0 : fees) + (isNaN(swap) ? 0 : swap);
+    const v = resultaat - (isNaN(fees) ? 0 : Math.abs(fees)) + (isNaN(swap) ? 0 : swap);
     if(!(key in byDay)){ byDay[key] = 0; order.push(key); }
     byDay[key] += v;
   });
