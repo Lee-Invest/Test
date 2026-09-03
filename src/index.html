@@ -2262,6 +2262,16 @@ function renderScreens(){
     renderScreens();
   };
   grid.appendChild(addBtn);
+
+  syncScreensGridWidth();
+}
+
+function syncScreensGridWidth(){
+  const grid = document.getElementById('screensGrid');
+  const dashboard = document.querySelector('.an-dashboard');
+  if(!grid || !dashboard) return;
+  const targetWidth = dashboard.getBoundingClientRect().width;
+  if(targetWidth > 0) grid.style.minWidth = targetWidth + 'px';
 }
 
 document.getElementById('addRow').onclick = ()=>{
@@ -2277,6 +2287,7 @@ document.getElementById('mt5Btn').onclick = ()=>{
 
 document.getElementById('undoBtn').onclick = undoState;
 document.getElementById('redoBtn').onclick = redoState;
+window.addEventListener('resize', ()=>{ syncScreensGridWidth(); });
 
 document.getElementById('phonePreviewBtn').onclick = ()=>{
   const html = document.documentElement;
@@ -2284,6 +2295,7 @@ document.getElementById('phonePreviewBtn').onclick = ()=>{
   html.classList.toggle('is-mobile', active);
   document.getElementById('phonePreviewBtn').classList.toggle('active', active);
   closeMobileSidebar();
+  setTimeout(syncScreensGridWidth, 50);
 };
 document.addEventListener('keydown', (e)=>{
   if(!(e.ctrlKey || e.metaKey)) return;
