@@ -160,6 +160,21 @@ body{
 .tab-menu button.danger{color:#c0392b;}
 .tab-menu button.danger:hover{background:#fbe7e5;}
 
+.phone-preview-btn{
+  margin:0 12px 8px;
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:600;
+  font-family:Arial, Helvetica, sans-serif;
+  border:1px solid var(--border-strong);
+  border-radius:6px;
+  background:var(--surface-2);
+  color:var(--text);
+  cursor:pointer;
+}
+.phone-preview-btn:hover{background:var(--hover);}
+.phone-preview-btn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+
 .sidebar-account{
   border-top:1px solid var(--border);
   padding:10px 12px;
@@ -659,6 +674,23 @@ html.is-mobile [contenteditable="true"]:focus{
   font-size:16px !important;
 }
 
+/* ===== Temporary desktop phone-preview toggle =====
+   Frames the page like a phone screen so you can see (and interact with)
+   the mobile layout without leaving your computer. The transform on body
+   makes it the containing block for position:fixed children (the mobile
+   sidebar drawer, its backdrop, the hamburger button), so they stay
+   pinned inside the frame instead of the real browser viewport. */
+html.phone-preview-frame body{
+  max-width:390px;
+  height:844px;
+  margin:30px auto;
+  border:10px solid #1b1b1b;
+  border-radius:36px;
+  overflow:auto;
+  box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  transform:scale(1);
+}
+
 .login-overlay{
   position:fixed; inset:0; z-index:1000;
   display:flex; align-items:center; justify-content:center;
@@ -790,6 +822,7 @@ html.is-mobile [contenteditable="true"]:focus{
     <div class="tabs-scroll">
       <div class="tabs-list" id="tabsList"></div>
     </div>
+    <button type="button" class="phone-preview-btn" id="phonePreviewBtn" title="Tijdelijk: bekijk hoe de site op een telefoon wordt weergegeven">📱 Telefoon-preview</button>
     <div class="sidebar-account">
       <div class="avatar">T</div>
       <div class="who">
@@ -2137,6 +2170,14 @@ document.getElementById('mt5Btn').onclick = ()=>{
 
 document.getElementById('undoBtn').onclick = undoState;
 document.getElementById('redoBtn').onclick = redoState;
+
+document.getElementById('phonePreviewBtn').onclick = ()=>{
+  const html = document.documentElement;
+  const active = html.classList.toggle('phone-preview-frame');
+  html.classList.toggle('is-mobile', active);
+  document.getElementById('phonePreviewBtn').classList.toggle('active', active);
+  closeMobileSidebar();
+};
 document.addEventListener('keydown', (e)=>{
   if(!(e.ctrlKey || e.metaKey)) return;
   const key = e.key.toLowerCase();
