@@ -1322,7 +1322,8 @@ function activeAccount(){
       id: TOTAL_VIEW_ID,
       name: 'Total',
       isVirtual: true,
-      trades: [].concat(...tab.accounts.map(a=> a.trades)).filter(t=> !isNaN(parseAmount(t.resultaat))),
+      trades: [].concat(...tab.accounts.map(a=> a.trades.map(t=> ({...t, _accountName: a.name}))))
+        .filter(t=> !isNaN(parseAmount(t.resultaat))),
       mt5: newMt5Config()
     };
   }
@@ -1582,8 +1583,11 @@ function visibleBaseColumns(){
 }
 
 function ttColumns(){
-  return visibleBaseColumns().map(c=>({kind:'base', key:c.key, label:c.label, width:colWidth(c.key, c.width), placeholder:c.placeholder}))
-    .concat(state.extraColumns.map(c=>({kind:'extra', key:c.id, label:c.name, width:colWidth(c.id, 100), colObj:c})));
+  const cols = visibleBaseColumns().map(c=>({kind:'base', key:c.key, label:c.label, width:colWidth(c.key, c.width), placeholder:c.placeholder}));
+  if(activeAccount().isVirtual){
+    cols.push({kind:'base', key:'_accountName', label:'Account', width:colWidth('_accountName', 90), placeholder:''});
+  }
+  return cols.concat(state.extraColumns.map(c=>({kind:'extra', key:c.id, label:c.name, width:colWidth(c.id, 100), colObj:c})));
 }
 
 function totalColumnCount(){
@@ -1642,25 +1646,27 @@ function buildTTHeaderCell(col){
     label.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); label.blur(); } };
   }
 
-  const delBtn = document.createElement('span');
-  delBtn.className = 'tt-del-col';
-  delBtn.textContent = '✕';
-  delBtn.title = 'kolom verwijderen';
-  delBtn.onclick = ()=>{
-    if(totalColumnCount() <= 1) return;
-    showConfirm(`Kolom "${col.label}" verwijderen?`, ()=>{
-      if(col.kind === 'base'){
-        state.hiddenBaseColumns.push(col.key);
-      } else {
-        state.extraColumns = state.extraColumns.filter(c=>c.id !== col.key);
-        state.tabs.forEach(t=> t.accounts.forEach(acc=> acc.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.key]; })));
-        delete state.colWidths[col.key];
-      }
-      saveState();
-      renderTradesWidget();
-    });
-  };
-  cell.appendChild(delBtn);
+  if(col.key !== '_accountName'){
+    const delBtn = document.createElement('span');
+    delBtn.className = 'tt-del-col';
+    delBtn.textContent = '✕';
+    delBtn.title = 'kolom verwijderen';
+    delBtn.onclick = ()=>{
+      if(totalColumnCount() <= 1) return;
+      showConfirm(`Kolom "${col.label}" verwijderen?`, ()=>{
+        if(col.kind === 'base'){
+          state.hiddenBaseColumns.push(col.key);
+        } else {
+          state.extraColumns = state.extraColumns.filter(c=>c.id !== col.key);
+          state.tabs.forEach(t=> t.accounts.forEach(acc=> acc.trades.forEach(tr=>{ if(tr.extra) delete tr.extra[col.key]; })));
+          delete state.colWidths[col.key];
+        }
+        saveState();
+        renderTradesWidget();
+      });
+    };
+    cell.appendChild(delBtn);
+  }
 
   const resizer = document.createElement('span');
   resizer.className = 'tt-resizer';
