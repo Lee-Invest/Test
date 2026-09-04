@@ -1322,7 +1322,7 @@ function activeAccount(){
       id: TOTAL_VIEW_ID,
       name: 'Total',
       isVirtual: true,
-      trades: [].concat(...tab.accounts.map(a=> a.trades)),
+      trades: [].concat(...tab.accounts.map(a=> a.trades)).filter(t=> !isNaN(parseAmount(t.resultaat))),
       mt5: newMt5Config()
     };
   }
